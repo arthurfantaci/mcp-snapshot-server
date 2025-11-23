@@ -8,7 +8,7 @@ import json
 import logging
 import sys
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 
 class StructuredFormatter(logging.Formatter):
@@ -81,7 +81,7 @@ def setup_logging(level: str = "INFO", structured: bool = True) -> None:
 class ContextLogger:
     """Logger wrapper that adds contextual information to all log messages."""
 
-    def __init__(self, name: str, context: Optional[dict[str, Any]] = None):
+    def __init__(self, name: str, context: dict[str, Any] | None = None):
         """Initialize context logger.
 
         Args:
@@ -91,7 +91,7 @@ class ContextLogger:
         self.logger = logging.getLogger(name)
         self.context = context or {}
 
-    def _add_context(self, extra: Optional[dict[str, Any]]) -> dict[str, Any]:
+    def _add_context(self, extra: dict[str, Any] | None) -> dict[str, Any]:
         """Merge context with extra fields.
 
         Args:
@@ -104,7 +104,7 @@ class ContextLogger:
         merged.update(extra or {})
         return merged
 
-    def debug(self, msg: str, extra: Optional[dict[str, Any]] = None) -> None:
+    def debug(self, msg: str, extra: dict[str, Any] | None = None) -> None:
         """Log debug message with context.
 
         Args:
@@ -114,7 +114,7 @@ class ContextLogger:
         extra_fields = self._add_context(extra)
         self.logger.debug(msg, extra={"extra_fields": extra_fields})
 
-    def info(self, msg: str, extra: Optional[dict[str, Any]] = None) -> None:
+    def info(self, msg: str, extra: dict[str, Any] | None = None) -> None:
         """Log info message with context.
 
         Args:
@@ -124,7 +124,7 @@ class ContextLogger:
         extra_fields = self._add_context(extra)
         self.logger.info(msg, extra={"extra_fields": extra_fields})
 
-    def warning(self, msg: str, extra: Optional[dict[str, Any]] = None) -> None:
+    def warning(self, msg: str, extra: dict[str, Any] | None = None) -> None:
         """Log warning message with context.
 
         Args:
@@ -134,7 +134,7 @@ class ContextLogger:
         extra_fields = self._add_context(extra)
         self.logger.warning(msg, extra={"extra_fields": extra_fields})
 
-    def error(self, msg: str, extra: Optional[dict[str, Any]] = None) -> None:
+    def error(self, msg: str, extra: dict[str, Any] | None = None) -> None:
         """Log error message with context.
 
         Args:

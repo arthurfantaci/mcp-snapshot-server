@@ -11,7 +11,7 @@ This module implements the Model Context Protocol (MCP) server with all 6 primit
 
 import json
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
@@ -29,8 +29,6 @@ from mcp_snapshot_server.agents.orchestrator import OrchestrationAgent
 from mcp_snapshot_server.prompts.field_definitions import (
     FIELD_DEFINITIONS,
     get_field_info,
-    get_required_fields,
-    get_valuable_fields,
 )
 from mcp_snapshot_server.prompts.section_prompts import SECTION_PROMPTS
 from mcp_snapshot_server.utils.config import get_settings
@@ -105,7 +103,9 @@ class SnapshotMCPServer:
             )
         ]
 
-    async def _call_tool(self, name: str, arguments: dict[str, Any]) -> list[TextContent]:
+    async def _call_tool(
+        self, name: str, arguments: dict[str, Any]
+    ) -> list[TextContent]:
         """Execute a tool.
 
         Args:
@@ -196,7 +196,9 @@ class SnapshotMCPServer:
         # Add metadata
         metadata = snapshot.get("metadata", {})
         lines.append("## Metadata\n")
-        lines.append(f"- **Average Confidence**: {metadata.get('avg_confidence', 0):.2f}")
+        lines.append(
+            f"- **Average Confidence**: {metadata.get('avg_confidence', 0):.2f}"
+        )
         lines.append(f"- **Total Sections**: {metadata.get('total_sections', 0)}")
         lines.append("")
 
@@ -232,7 +234,7 @@ class SnapshotMCPServer:
         resources = []
 
         # Add snapshot resources
-        for snapshot_id in self.snapshots.keys():
+        for snapshot_id in self.snapshots:
             resources.append(
                 Resource(
                     uri=f"snapshot://{snapshot_id}",
@@ -244,7 +246,7 @@ class SnapshotMCPServer:
 
         # Add section resources for each snapshot
         for snapshot_id, snapshot in self.snapshots.items():
-            for section_name in snapshot.get("sections", {}).keys():
+            for section_name in snapshot.get("sections", {}):
                 section_slug = section_name.lower().replace(" ", "_")
                 resources.append(
                     Resource(
@@ -256,7 +258,7 @@ class SnapshotMCPServer:
                 )
 
         # Add field definition resources
-        for field_name in FIELD_DEFINITIONS.keys():
+        for field_name in FIELD_DEFINITIONS:
             resources.append(
                 Resource(
                     uri=f"field://{field_name}",
@@ -364,7 +366,7 @@ class SnapshotMCPServer:
         prompts = []
 
         # Add section generation prompts
-        for section_key, section_data in SECTION_PROMPTS.items():
+        for _section_key, section_data in SECTION_PROMPTS.items():
             prompts.append(
                 Prompt(
                     name=section_data["name"],
@@ -421,7 +423,7 @@ class SnapshotMCPServer:
             return await self._get_elicitation_prompt(arguments)
 
         # Check section prompts
-        for section_key, section_data in SECTION_PROMPTS.items():
+        for _section_key, section_data in SECTION_PROMPTS.items():
             if section_data["name"] == name:
                 # Format template with arguments
                 template = section_data["template"]
@@ -482,10 +484,10 @@ class SnapshotMCPServer:
         # Build elicitation prompt
         prompt_text = f"""The {section_name} section is missing the following information:
 
-**{field_name.replace('_', ' ').title()}**
-{field_info['description']}
+**{field_name.replace("_", " ").title()}**
+{field_info["description"]}
 
-Example: {field_info['example']}
+Example: {field_info["example"]}
 
 Could you please provide this information?"""
 

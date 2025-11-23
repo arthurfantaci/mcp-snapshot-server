@@ -4,7 +4,7 @@ This module defines the fields that can be elicited from users
 when critical information is missing from transcript analysis.
 """
 
-from typing import Any, Optional
+from typing import Any
 
 # Field definitions with metadata for elicitation
 FIELD_DEFINITIONS: dict[str, dict[str, Any]] = {
@@ -132,7 +132,7 @@ VALUABLE_FIELDS: dict[str, list[str]] = {
 }
 
 
-def get_field_info(field_name: str) -> Optional[dict[str, Any]]:
+def get_field_info(field_name: str) -> dict[str, Any] | None:
     """Get information about a specific field.
 
     Args:

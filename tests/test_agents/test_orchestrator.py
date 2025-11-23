@@ -1,6 +1,6 @@
 """Tests for Orchestration Agent."""
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -71,7 +71,9 @@ class TestOrchestrationAgent:
         assert orchestrator_agent.system_prompt is not None
         assert orchestrator_agent.analysis_agent is not None
         assert orchestrator_agent.validation_agent is not None
-        assert len(orchestrator_agent.section_generators) == 10  # Excluding exec summary
+        assert (
+            len(orchestrator_agent.section_generators) == 10
+        )  # Excluding exec summary
 
     def test_section_names(self, orchestrator_agent):
         """Test that all 11 section names are defined."""
@@ -97,7 +99,9 @@ class TestOrchestrationAgent:
         assert "vtt_file_path" in str(exc_info.value.message)
 
     @patch("mcp_snapshot_server.agents.orchestrator.parse_vtt_transcript")
-    def test_parse_transcript(self, mock_parse, orchestrator_agent, mock_transcript_data):
+    def test_parse_transcript(
+        self, mock_parse, orchestrator_agent, mock_transcript_data
+    ):
         """Test transcript parsing."""
         mock_parse.return_value = mock_transcript_data
 
@@ -367,7 +371,12 @@ class TestOrchestrationAgent:
     @pytest.mark.asyncio
     @patch("mcp_snapshot_server.agents.orchestrator.parse_vtt_transcript")
     async def test_full_workflow_integration(
-        self, mock_parse, orchestrator_agent, mock_transcript_data, mock_analysis_results, test_env_vars
+        self,
+        mock_parse,
+        orchestrator_agent,
+        mock_transcript_data,
+        mock_analysis_results,
+        test_env_vars,
     ):
         """Test complete workflow integration."""
         mock_parse.return_value = mock_transcript_data

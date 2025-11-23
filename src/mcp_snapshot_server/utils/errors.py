@@ -6,9 +6,10 @@ and retry logic for handling various failure scenarios.
 
 import asyncio
 import logging
+from collections.abc import Callable
 from enum import Enum
 from functools import wraps
-from typing import Any, Callable, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +34,7 @@ class MCPServerError(Exception):
         self,
         message: str,
         error_code: ErrorCode,
-        details: Optional[dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
     ):
         """Initialize MCP server error.
 
@@ -77,7 +78,7 @@ def retry_on_error(
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         @wraps(func)
         async def wrapper(*args: Any, **kwargs: Any) -> Any:
-            last_exception: Optional[Exception] = None
+            last_exception: Exception | None = None
 
             for attempt in range(max_retries):
                 try:

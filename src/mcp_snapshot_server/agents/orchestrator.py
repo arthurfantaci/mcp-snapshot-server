@@ -5,8 +5,7 @@ Snapshot from a VTT transcript file.
 """
 
 import asyncio
-from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from mcp_snapshot_server.agents.analyzer import AnalysisAgent
 from mcp_snapshot_server.agents.base import BaseAgent
@@ -194,7 +193,9 @@ class OrchestrationAgent(BaseAgent):
                 details={"file": vtt_file_path},
             ) from e
 
-    async def _analyze_transcript(self, transcript_data: dict[str, Any]) -> dict[str, Any]:
+    async def _analyze_transcript(
+        self, transcript_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Analyze transcript using Analysis Agent.
 
         Args:
@@ -252,9 +253,7 @@ class OrchestrationAgent(BaseAgent):
             "Section generation complete",
             extra={
                 "sections_generated": len(sections),
-                "avg_confidence": sum(
-                    s.get("confidence", 0) for s in sections.values()
-                )
+                "avg_confidence": sum(s.get("confidence", 0) for s in sections.values())
                 / len(sections)
                 if sections
                 else 0,
@@ -296,7 +295,7 @@ class OrchestrationAgent(BaseAgent):
 
         # Build sections dictionary
         sections = {}
-        for section_name, result in zip(section_names, results):
+        for section_name, result in zip(section_names, results, strict=False):
             if isinstance(result, Exception):
                 self.logger.warning(
                     f"Section generation failed: {section_name}",

@@ -1,0 +1,15 @@
+The 'Customer Solution Snapshot' document is composed of the following 11 sections:
+
+'Customer Information'
+'Background'
+'Solution'
+'Engagement / Implementation Details and Timeline'
+'Results and Achievements'
+'Adoption and Usage'
+'Financial Impact'
+'Long-Term Impact'
+'Visuals'
+'Additional Commentary'
+'Executive Summary'
+
+I will provide 11 separate prompts, one prompt for each document section, with a short summary description of the required content for each section. You will respond to each of my 11 separate prompts, using the short summary description for guidance, with a detailed response that fully addresses the information requested and described in the short summary description for that section.

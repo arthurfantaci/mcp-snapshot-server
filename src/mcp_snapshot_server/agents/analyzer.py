@@ -148,6 +148,10 @@ class AnalysisAgent(BaseAgent):
             Dictionary with LLM analysis results
         """
         # Build analysis prompt
+        additional_context_section = ""
+        if additional_context:
+            additional_context_section = f"ADDITIONAL CONTEXT:\n{additional_context}\n\n"
+
         prompt = f"""Analyze this meeting transcript and extract structured information:
 
 TRANSCRIPT:
@@ -159,9 +163,7 @@ ALREADY EXTRACTED ENTITIES:
 ALREADY EXTRACTED TOPICS:
 {", ".join(topics)}
 
-{f"ADDITIONAL CONTEXT:\n{additional_context}\n" if additional_context else ""}
-
-Extract and structure the following information in JSON format:
+{additional_context_section}Extract and structure the following information in JSON format:
 
 1. NAMED ENTITIES (supplement the above with any missing):
    - People (names and roles)

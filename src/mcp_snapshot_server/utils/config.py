@@ -4,10 +4,8 @@ This module provides comprehensive configuration settings for the entire applica
 organized into logical groups using Pydantic Settings.
 """
 
-import os
-from typing import Any
 
-from pydantic import Field, field_validator
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -17,9 +15,7 @@ class MCPServerSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="MCP_", env_file=".env")
 
     # Server settings
-    server_name: str = Field(
-        default="snapshot-server", description="MCP server name"
-    )
+    server_name: str = Field(default="snapshot-server", description="MCP server name")
 
     version: str = Field(default="0.1.0", description="Server version")
 

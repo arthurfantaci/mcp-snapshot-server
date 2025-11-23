@@ -53,7 +53,9 @@ class ValidationAgent(BaseAgent):
             "Validation complete",
             extra={
                 "issues_found": len(merged_results.get("issues", [])),
-                "requires_improvements": merged_results.get("requires_improvements", False),
+                "requires_improvements": merged_results.get(
+                    "requires_improvements", False
+                ),
             },
         )
 
@@ -63,7 +65,9 @@ class ValidationAgent(BaseAgent):
         """Build formatted text from sections."""
         parts = []
         for name, section in sections.items():
-            content = section.get("content", "") if isinstance(section, dict) else section
+            content = (
+                section.get("content", "") if isinstance(section, dict) else section
+            )
             parts.append(f"## {name}\n{content}")
         return "\n\n".join(parts)
 
@@ -120,7 +124,9 @@ OUTPUT: Structured feedback as shown above
 
         # Check for very short sections (likely low quality)
         for name, section in sections.items():
-            content = section.get("content", "") if isinstance(section, dict) else section
+            content = (
+                section.get("content", "") if isinstance(section, dict) else section
+            )
             if len(content) < 50:
                 issues.append(f"Section '{name}' is very short (< 50 chars)")
 
@@ -132,7 +138,9 @@ OUTPUT: Structured feedback as shown above
         date_pattern = r"\d{4}-\d{2}-\d{2}"
 
         for section in sections.values():
-            content = section.get("content", "") if isinstance(section, dict) else section
+            content = (
+                section.get("content", "") if isinstance(section, dict) else section
+            )
             found_dates = re.findall(date_pattern, content)
             dates.extend(found_dates)
 
@@ -149,12 +157,23 @@ OUTPUT: Structured feedback as shown above
             for issue in quality_issues:
                 issue_lower = issue.lower()
                 # Skip lines that explicitly say "no" problems
-                if issue_lower.startswith("no ") or "no problems" in issue_lower or "none" in issue_lower:
+                if (
+                    issue_lower.startswith("no ")
+                    or "no problems" in issue_lower
+                    or "none" in issue_lower
+                ):
                     continue
                 # Check for actual problem keywords
                 if any(
                     keyword in issue_lower
-                    for keyword in ["problem", "concern", "poor", "unclear", "unprofessional", "issue"]
+                    for keyword in [
+                        "problem",
+                        "concern",
+                        "poor",
+                        "unclear",
+                        "unprofessional",
+                        "issue",
+                    ]
                 ):
                     has_quality_issues = True
                     break
@@ -174,7 +193,9 @@ OUTPUT: Structured feedback as shown above
         issues = []
         if "FACTUAL CONSISTENCY:" in response:
             section = response.split("FACTUAL CONSISTENCY:")[1].split("\n\n")[0]
-            issues.extend([line.strip() for line in section.split("\n") if line.strip()])
+            issues.extend(
+                [line.strip() for line in section.split("\n") if line.strip()]
+            )
         return issues
 
     def _extract_improvements(self, response: str) -> list[str]:
@@ -182,7 +203,9 @@ OUTPUT: Structured feedback as shown above
         improvements = []
         if "IMPROVEMENTS:" in response:
             section = response.split("IMPROVEMENTS:")[1].split("\n\n")[0]
-            improvements.extend([line.strip() for line in section.split("\n") if line.strip()])
+            improvements.extend(
+                [line.strip() for line in section.split("\n") if line.strip()]
+            )
         return improvements
 
     def _extract_quality_issues(self, response: str) -> list[str]:
@@ -190,7 +213,9 @@ OUTPUT: Structured feedback as shown above
         issues = []
         if "QUALITY ISSUES:" in response:
             section = response.split("QUALITY ISSUES:")[1].split("\n\n")[0]
-            issues.extend([line.strip() for line in section.split("\n") if line.strip()])
+            issues.extend(
+                [line.strip() for line in section.split("\n") if line.strip()]
+            )
         return issues
 
     def _merge_validation_results(
@@ -201,7 +226,8 @@ OUTPUT: Structured feedback as shown above
             "factual_consistency": llm_results.get("factual_consistency", True),
             "completeness": llm_results.get("completeness", True),
             "quality": llm_results.get("quality", True),
-            "issues": llm_results.get("issues", []) + heuristic_results.get("issues", []),
+            "issues": llm_results.get("issues", [])
+            + heuristic_results.get("issues", []),
             "improvements": llm_results.get("improvements", []),
             "requires_improvements": (
                 llm_results.get("requires_improvements", False)

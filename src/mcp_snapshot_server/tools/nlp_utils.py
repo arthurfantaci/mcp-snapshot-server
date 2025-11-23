@@ -56,7 +56,6 @@ def extract_entities(text: str) -> dict[str, list[str]]:
             "PERCENT": [],
         }
 
-        min_confidence = settings.nlp.min_entity_confidence
 
         for ent in doc.ents:
             if ent.label_ in entities_by_type:
@@ -65,12 +64,10 @@ def extract_entities(text: str) -> dict[str, list[str]]:
                     entities_by_type[ent.label_].append(ent.text)
 
         # Clean up empty categories
-        entities_by_type = {
-            k: v for k, v in entities_by_type.items() if v
-        }
+        entities_by_type = {k: v for k, v in entities_by_type.items() if v}
 
         logger.info(
-            f"Extracted entities",
+            "Extracted entities",
             extra={
                 "total_entities": sum(len(v) for v in entities_by_type.values()),
                 "entity_types": list(entities_by_type.keys()),
@@ -141,7 +138,7 @@ def extract_topics(text: str, top_n: int = 10) -> list[str]:
         topics = [word for word, freq in freq_dist.most_common(top_n)]
 
         logger.info(
-            f"Extracted topics",
+            "Extracted topics",
             extra={"topics_count": len(topics), "total_tokens": len(tokens)},
         )
 
@@ -172,7 +169,6 @@ def extract_key_phrases(text: str, top_n: int = 15) -> list[str]:
         List of key phrases
     """
     try:
-        import nltk
         from nltk import word_tokenize
         from nltk.corpus import stopwords
         from nltk.util import ngrams
@@ -208,7 +204,7 @@ def extract_key_phrases(text: str, top_n: int = 15) -> list[str]:
         phrases = top_trigrams + top_bigrams
 
         logger.info(
-            f"Extracted key phrases",
+            "Extracted key phrases",
             extra={"phrases_count": len(phrases)},
         )
 
@@ -219,9 +215,7 @@ def extract_key_phrases(text: str, top_n: int = 15) -> list[str]:
         return []
 
 
-def analyze_transcript_structure(
-    transcript_data: dict[str, Any]
-) -> dict[str, Any]:
+def analyze_transcript_structure(transcript_data: dict[str, Any]) -> dict[str, Any]:
     """Analyze the structure of a transcript.
 
     Args:

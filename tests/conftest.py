@@ -1,6 +1,5 @@
 """Pytest configuration and shared fixtures."""
 
-import os
 from pathlib import Path
 from typing import Any
 from unittest.mock import AsyncMock, Mock

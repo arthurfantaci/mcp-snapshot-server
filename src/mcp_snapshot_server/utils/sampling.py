@@ -5,7 +5,7 @@ from the Anthropic API using MCP sampling patterns.
 """
 
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from anthropic import Anthropic
 
@@ -23,9 +23,9 @@ logger = logging.getLogger(__name__)
 async def sample_llm(
     prompt: str,
     system_prompt: str,
-    temperature: Optional[float] = None,
-    max_tokens: Optional[int] = None,
-    model: Optional[str] = None,
+    temperature: float | None = None,
+    max_tokens: int | None = None,
+    model: str | None = None,
 ) -> dict[str, Any]:
     """Request LLM completion via Anthropic API.
 

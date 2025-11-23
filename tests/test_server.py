@@ -1,6 +1,6 @@
 """Tests for MCP Server."""
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
 
@@ -141,9 +141,7 @@ class TestToolsPrimitive:
     @pytest.mark.asyncio
     async def test_generate_snapshot_error_handling(self, mcp_server):
         """Test snapshot generation error handling."""
-        mcp_server.orchestrator.process = AsyncMock(
-            side_effect=Exception("Test error")
-        )
+        mcp_server.orchestrator.process = AsyncMock(side_effect=Exception("Test error"))
 
         with pytest.raises(MCPServerError) as exc_info:
             await mcp_server._generate_snapshot({"vtt_file_path": "test.vtt"})
@@ -195,12 +193,15 @@ class TestResourcesPrimitive:
         resources = await mcp_server._list_resources()
 
         # Check snapshot resource
-        snapshot_resources = [r for r in resources if str(r.uri).startswith("snapshot://")]
+        snapshot_resources = [
+            r for r in resources if str(r.uri).startswith("snapshot://")
+        ]
         assert len(snapshot_resources) > 0
 
         # Check for main snapshot
         main_snapshot = next(
-            (r for r in snapshot_resources if str(r.uri) == "snapshot://test_snapshot"), None
+            (r for r in snapshot_resources if str(r.uri) == "snapshot://test_snapshot"),
+            None,
         )
         assert main_snapshot is not None
         assert main_snapshot.mimeType == "application/json"
@@ -397,7 +398,9 @@ class TestIntegration:
 
         # 2. List resources - should include the snapshot
         resources = await mcp_server._list_resources()
-        snapshot_uris = [str(r.uri) for r in resources if "integration_test" in str(r.uri)]
+        snapshot_uris = [
+            str(r.uri) for r in resources if "integration_test" in str(r.uri)
+        ]
         assert len(snapshot_uris) > 0
 
         # 3. Read the snapshot resource

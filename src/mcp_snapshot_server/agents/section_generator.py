@@ -8,10 +8,6 @@ import re
 from typing import Any
 
 from mcp_snapshot_server.agents.base import BaseAgent
-from mcp_snapshot_server.prompts.field_definitions import (
-    get_required_fields,
-    get_valuable_fields,
-)
 from mcp_snapshot_server.utils.config import get_settings
 from mcp_snapshot_server.utils.logging_config import ContextLogger
 from mcp_snapshot_server.utils.sampling import sample_llm
@@ -135,8 +131,7 @@ class SectionGeneratorAgent(BaseAgent):
 
         # Prepare template variables
         template_vars = {
-            "transcript": transcript[:5000]
-            + ("..." if len(transcript) > 5000 else ""),
+            "transcript": transcript[:5000] + ("..." if len(transcript) > 5000 else ""),
             "entities": entities_str,
             "topics": topics_str,
         }
@@ -159,9 +154,7 @@ class SectionGeneratorAgent(BaseAgent):
 
         return prompt
 
-    def _calculate_confidence(
-        self, content: str, analysis: dict[str, Any]
-    ) -> float:
+    def _calculate_confidence(self, content: str, analysis: dict[str, Any]) -> float:
         """Calculate confidence score for generated section.
 
         Args:
@@ -197,9 +190,7 @@ class SectionGeneratorAgent(BaseAgent):
         if self.section_name == "Customer Information":
             if "company name:" in content_lower:
                 # Check if actually has a value
-                if "not mentioned" not in content_lower.split("company name:")[1][
-                    :50
-                ]:
+                if "not mentioned" not in content_lower.split("company name:")[1][:50]:
                     score += 0.1
             else:
                 score -= 0.2
@@ -250,10 +241,6 @@ class SectionGeneratorAgent(BaseAgent):
         missing = []
         content_lower = content.lower()
 
-        # Get required and valuable fields for this section
-        required_fields = get_required_fields(self.section_name)
-        valuable_fields = get_valuable_fields(self.section_name)
-
         # Section-specific field checks
         if self.section_name == "Customer Information":
             if self._is_field_missing(content_lower, "company name"):
@@ -274,7 +261,10 @@ class SectionGeneratorAgent(BaseAgent):
         elif self.section_name == "Financial Impact":
             if not re.search(r"\$\d+|cost savings", content_lower):
                 missing.append("cost_savings")
-            if "roi" not in content_lower and "return on investment" not in content_lower:
+            if (
+                "roi" not in content_lower
+                and "return on investment" not in content_lower
+            ):
                 missing.append("roi_percentage")
 
         elif self.section_name == "Adoption and Usage":

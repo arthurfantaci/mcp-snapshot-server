@@ -186,7 +186,7 @@ def parse_vtt_transcript(file_path: str) -> dict[str, Any]:
         full_text = "\n".join(full_text_parts)
 
         logger.info(
-            f"Successfully parsed VTT file",
+            "Successfully parsed VTT file",
             extra={
                 "speakers_count": len(speakers),
                 "turns_count": len(speaker_turns),
@@ -197,7 +197,7 @@ def parse_vtt_transcript(file_path: str) -> dict[str, Any]:
 
         return {
             "text": full_text,
-            "speakers": sorted(list(speakers)),
+            "speakers": sorted(speakers),
             "speaker_turns": speaker_turns,
             "duration": duration,
             "metadata": {
@@ -240,7 +240,7 @@ def get_transcript_summary(transcript_data: dict[str, Any]) -> str:
     seconds = int(duration % 60)
 
     return f"""Transcript Summary:
-- Speakers: {len(speakers)} ({', '.join(speakers[:3])}{'...' if len(speakers) > 3 else ''})
+- Speakers: {len(speakers)} ({", ".join(speakers[:3])}{"..." if len(speakers) > 3 else ""})
 - Duration: {minutes}m {seconds}s
 - Speaking turns: {len(turns)}
 - Total text length: {text_length:,} characters

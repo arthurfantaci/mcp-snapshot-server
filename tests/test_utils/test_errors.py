@@ -1,6 +1,5 @@
 """Tests for error handling."""
 
-import asyncio
 
 import pytest
 
@@ -76,9 +75,7 @@ class TestMCPServerError:
 
     def test_error_inheritance(self) -> None:
         """Test that MCPServerError is an Exception."""
-        error = MCPServerError(
-            message="Test", error_code=ErrorCode.INVALID_INPUT
-        )
+        error = MCPServerError(message="Test", error_code=ErrorCode.INVALID_INPUT)
         assert isinstance(error, Exception)
 
 
@@ -111,9 +108,7 @@ class TestRetryDecorator:
             nonlocal call_count
             call_count += 1
             if call_count < 3:
-                raise MCPServerError(
-                    "Temporary error", ErrorCode.API_ERROR
-                )
+                raise MCPServerError("Temporary error", ErrorCode.API_ERROR)
             return "success"
 
         result = await flaky_function()
@@ -129,9 +124,7 @@ class TestRetryDecorator:
         async def always_fails() -> None:
             nonlocal call_count
             call_count += 1
-            raise MCPServerError(
-                "Permanent error", ErrorCode.INTERNAL_ERROR
-            )
+            raise MCPServerError("Permanent error", ErrorCode.INTERNAL_ERROR)
 
         with pytest.raises(MCPServerError) as exc_info:
             await always_fails()
