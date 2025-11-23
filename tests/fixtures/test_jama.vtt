@@ -1,0 +1,533 @@
+WEBVTT
+
+1
+00:00:10.190 --> 00:00:13.230
+Franklin Dorsey: And it's recording alright perfect.
+
+2
+00:00:13.290 --> 00:00:20.840
+Bob Jones: Yeah. So we'll take this transcript, having covered each of those elements. And then my plan is just to use Quiznos Analytics Answers to make our lives easier, to generate a draft document that, well, then we can just touch it up over the course of the 2 weeks, and at the end.
+
+8
+00:00:39.626 --> 00:00:41.770
+Franklin Dorsey: That sounds great.
+
+9
+00:00:41.940 --> 00:00:57.778
+Bob Jones: Yeah, so good. All right. I would love unless you're would you rather go through the questions first, or do you want to go through your project plan? First, let's go through the questions. Let's get the formalities first. Okay? Sounds good. Let me pull up my email just to go through each of the individual questions. Okay, great. So we'll just go through them in turn. So the first question is the Company Name. Is Quest Enterprises the entire company name, or is it Quest Enterprises Inc. or is there a different name?  The second question is Company Industry. What is Quest Enterprises's Industry?
+
+16
+00:01:29.030 --> 00:01:32.189
+Franklin Dorsey: The Company Name is Quest Enterprises. Quest Enterprises's Company Industry is Databases Services.
+
+17
+00:01:32.230 --> 00:01:36.670
+Bob Jones: The next question is Company Location. Where is Quest Enterprises located?
+
+20
+00:01:49.760 --> 00:01:50.885
+Franklin Dorsey: The Quest Enterprises company headquarters is located in Raleigh, North Carolina, United States.
+
+21
+00:01:52.130 --> 00:02:09.410
+Bob Jones: Okay. And the next question is Company Contact. I'm assuming you and I will be working together, and that you, Franklin Dorsey, are the Company Contact. The next question is the Company Contact Role.
+
+22
+00:02:09.470 --> 00:02:14.579
+Franklin Dorsey: Yes, I am the correct person to list as the Company Contact. My title is Senior Business Systems Analyst, and my title should be listed as the Company Contact Role.
+
+24
+00:02:20.690 --> 00:02:30.539
+Bob Jones: Alright, thank you, Filip. Let's begin discussing the purpose of this project we're here today to kick off? What activities will Quiznos Analytics Professional Services be performing and what deliverables will Quiznos Analytics Professional Services be delivering for Quest Enterprises during the course of this project?
+
+25
+00:02:31.450 --> 00:02:32.959
+Franklin Dorsey: Okay, so our plan is to get data and analytics adopted in Quest Enterprises because we are really struggling with it. The plan is to make the data and analytics like Business Intelligence tool and data literacy data cataloging more available and approachable for the entire company. Quest Enterprises will start small. There will be just few people that will be starting with Quiznos Analytics to use it, and then we will propagate the knowledge to a wider audience. First of all, we will want to create some trainings based on your experience based on Quiznos Analytics's learning resources. That's what we will want to bring to Quest Enterprises with this Quiznos Analytics Professional Services engagement. And the deliverables that we are thinking, like the measurable things that we want to get out of this Professional Services engagement are, first off, the Booking Data Dashboard that will be available for the Quest Enterprises Finance Team. Secondly, the Quest Enterprises Revenue Operations Team, as well as the wider audience connected to Quest Enterprises's ServiceNow data. I am having a problem with the Quiznos Analytics ServiceNow Data Connector. The out-of-the-box Quiznos Analytics ServiceNow Data Connector doesn't work properly, and I'm struggling with the API. So that's the second thing. And the third thing is Training Materials. Preparation of Training Materials is the third goal, together with the with Data Catalog preparation. So, we want to have a set of information for new users that will be joining Quest Enterprises's Quiznos Analytics Cloud Platform and will be able to use the tool, and we want to address them with the Training Materials first, and then we would want to provide them access to some type of Data Catalog, so they will be able to see what kind of data sets do they have, what kind of data is in those data sets, and what kinds of Data Visualizations or Quiznos Analytics Dashboards we already have. This kind of stuff is the 3rd goal and is the least important at this point, but I would want to address it, also, if we'll have time.
+
+50
+00:04:49.170 --> 00:04:54.830
+Bob Jones: Okay, thank you. Yeah. In 99% of my experiences with engagements of this kind, no one is able to articulate as clearly as you just did what they want to get out of the engagement. So this is terrific, and I embrace your third point because it's soon enough that the first two priorities will be met, and then ongoing you'll be left with needing to meet your third priority of how to onboard new users to the Quiznos Analytics Cloud Platform, as well as foster their productive use of the platform. So, what we can do over the next day is brainstorm and scope out what we need to get done, and then prioritize those items and identify what we can actually get done within this engagement's allowable time. So at a minimum for the third point, you and I can work together to make sure that we at least have a framework, if not, you know, specific deliverables for that 3rd objective of Training, Onboarding, and those kinds of activities.
+
+59
+00:05:49.420 --> 00:05:50.480
+Franklin Dorsey: Excellent.
+
+60
+00:05:50.670 --> 00:05:51.580
+Bob Jones: Okay. Training, Onboarding, and those kinds of activities have been a real interest of mine over the last few years. I digress a bit here, but how do you put that type of resource into a in a digestible medium, so that people actually use it, you know. So yeah. So I'm glad to have that third point be a part of this engagement. Okay, that was terrific. And all right. So let's talk about the solution. Some of these points. Clearly, we won't be, or I won't, because you won't have to draft any of this, but I'll be grateful for your oversight and approval of the content. In terms of the solutions we deliver during this engagement, is Quest Enterprises on the Quiznos Analytics Windows Enterprise platform or the Quiznos Analytics Cloud platform?
+
+74
+00:06:47.690 --> 00:06:52.690
+Franklin Dorsey: Quest Enterprises is on the Quiznos Analytics Cloud platform.
+
+75
+00:06:53.030 --> 00:06:57.729
+Bob Jones: That's great. Okay, good. Is Quest Enterprises using any of the Quiznos Analytics Data Integration components of the Quiznos Analytics Cloud platform? Or is this engagement focused entirely on Quiznos Analytics Cloud Analytics and Quiznos Analytics Sense application development? Because I did, thank you very much, get access right away to Quest Enterprises's Quiznos Analytics Cloud Tenant from the link you provided me. So this engagement will be focused on Quiznos Analytics Cloud Analytics and Quiznos Analytics Sense in terms of the tools and components we'll be using. Okay, yeah.
+
+79
+00:07:15.876 --> 00:07:36.470
+Franklin Dorsey: Yes, Quiznos Analytics Sense. Well, Quiznos Analytics Cloud, I'm not sure of the naming of the specific Quiznos Analytics product that Quest Enterprises has licensed from Quiznos Analytics. But I think Quiznos Analytics Sense. But it's the Quiznos Analytics Cloud Platform version of Quiznos Analytics Sense, and we don't have any specific Quiznos Analytics product components or integrations added to Quest Enterprises's Quiznos Analytics Cloud Platform. I was recently talking with Quiznos Analytics Talenti Data Works about the Quiznos Analytics Cloud Data Integration products and capabilities, because Quest Enterprises is also looking at the Quiznos Analytics Cloud version of the Quiznos Analytics Data Integration Platform as an additional piece of the Quiznos Analytics Cloud Platform to license from Quiznos Analytics. But Quest Enterprises hasn't made any decisions or affirmative steps around licensing any components of the Quiznos Analytics Data Integration Platform. So Quest Enterprises just has the Quiznos Analytics Cloud instance that you got invited to log into as a user. Please let me know if you are missing any privileges to see something more, because we don't have much implemented in our Quiznos Analytics Cloud instance yet. If there would be something more that you need, just let me know, and I'll change it.
+
+82
+00:07:49.760 --> 00:08:05.999
+Bob Jones: Oh, that's great. I appreciate that. So after we've ended this first meeting, I'll go drive around the Quest Enterprises Quiznos Analytics Cloud instance and take a look. I'm laughing because you can join the club in terms of confusion about Quiznos Analytics's product naming conventions. It's the same for me. Things things change so quickly. So you articulated it beautifully. So there's none of the Talenti Data Works Quiznos Analytics Data Integration components. And we're just gonna be working right on the Quest Enterprises Quiznos Analytics Cloud Tenant. So that's perfect. All right, and let me look at the next question, Product and Service Use. We've already talked about the Implementation Process question. So now let's discuss my activities and deliverables for next day or so. After I complete those activities and deliverables, we can plan to meet and we'll walk through what I think would be, I hope, an acceptable work plan and how we'll get things done for the duration of this current engagement. So that's the solution piece for now: the Engagement Outline document, as well as the details and timelines of this engagement. So we know, today's date, Monday, July 14, 2024 will be the answer to the 'Start Date' question. And with this engagement budgeted for eighty hours, we know the answer to the 'End Date' question will be Friday, July 26, 2024. And the answers to some of these questions aren't set in stone. For instance, we have a set block of eighty billable hours. My way of working is, you know, we'll make sure we get down on paper and agree very quickly about what we want to get done in the eighty hours of billable time. But if it takes a few hours extra here or there, that's irrelevant. It's not going to be, "I've burned through my allotted hours, and now I'll stop working" or something like that. To answer the 'Engagement Team' question, let's just list out the individuals from Quest Enterprises and Quiznos Analytics that we envision participating in this engagement, and also, for instance, any relevant Project Stakeholders. I know this isn't a very big project. But if there are other people that aren't direct members of the 'Engagement Team', like, for instance, Approvers or Steering Committee members, if you will. Identifying those types of individuals will assist in answering the question about 'Milestones' because if those individuals need to be apprised over the course of this engagement, and you know what information we would need to provide them, we can create specific 'Milestones' to document those requirements.
+
+98
+00:10:03.070 --> 00:10:06.209
+Franklin Dorsey: Okay. So our plan was to get the engagement with the Quiznos Analytics Professional Services Team, or you, Bob Jones, specifically for about a week and work with you on the most problematic things: the issue with the Quiznos Analytics ServiceNow Data Connector; the Quest Enterprises Booking Data Quiznos Analytics Sense application (i.e., Booking Data Dashboard), specifically the data and initial dashboard preparation based on the data that is already imported into Quest Enterprises's Quiznos Analytics Cloud platform. Because I was able to prepare the data set for the Booking Data Dashboard. It's not perfect. We will talk about it in upcoming calls we need to schedule, probably during the calls we schedule to discuss the scope of the Booking Data Dashboard development. The thing is, that Quest Enterprises would want to have like a week-long initial engagement first, where we will see what was done by Quiznos Analytics Professional Services, and then we would want to pause this engagement for an indeterminate period to allow Quest Enterprises to get acquainted with that specific work and deliverables. And after that pause, Quest Enterprises would want re-engage with Quiznos Analytics Professional Services, with some more questions, and resume the engagement for the remaining duration of forty billable hours. What we don't understand, but we will not be able to reproduce ourselves, because we don't understand some pieces of it, and then we would want to get the like. The second week of this engagement. If that makes sense for the activities and deliverables necessary to address the Training and Data Cataloging areas of interest. And all of this area encompassing the Data Governance piece, as well as more questions and so on. I'm not sure if one week, this first week will be enough to deliver the Booking Data Dashboard and resolve the issue with the Quiznos Analytics ServiceNow Data Connector, enabling access to the ServiceNow data and integration with the ServiceNow database. If that will be not enough, we can take more time. But Quest Enterprises would want to get some break in the middle, so we can get acquainted with what was done and get back to Quiznos Analytics Professional Services with questions. Okay. So that's like the overall timeline that we see. There are no hard deadlines for Quest Enterprises for when this needs to be done. And the answer to the 'Engagement Team' question will be me and my director, Edward Chase. Edward Chase will be the decision maker, probably with any need to increase the number of Quiznos Analytics Professional Service's billable hours or any additional engagements with Quiznos Analytics Professional Services. If either of those contingencies were going to happen. And the other member of the 'Engagement Team' from Quest Enterprises will be Andrew Neighbor, from the Quest Enterprises Finance Team. Andrew Neighbor is a Senior Financial Analyst with Quest Enterprises. Andrew Neighbor is the primary stakeholder of the Booking Data Dashboard. Amal will be maintaining the Booking Data Dashboard, changing it, and improving it, based on the requirements he receives from other Quest Enterprises Finance Team Stakeholders. And another member of the 'Engagement Team' but less involved, will be Shannon Stone. Shannon Stone is Andrew Neighbor's manager. And the final member of the 'Engagement Team' from Quest Enterprises is this engagement's sponsor, Eileen Brown. That's like the whole team from Quest Enterprises that will be working on this small project, and each of their names should be added as responses to the 'Engagement Team' question.
+
+126
+00:12:54.100 --> 00:13:08.039
+Bob Jones: Okay, that's perfect, and what we can do is one thing I love about using, recording the meeting and using the transcript is, I'll come back to you just to confirm spellings and titles for the folks we just talked about. So we don't have to worry about it right now, and agreed. So from Quiznos Analytics Professional Services, the names that should be added as responses to the 'Engagement Team' question are: Bob Jones and Vincent Martin. So I'll give you just the quick version of my background. So my name is Bob Jones and I've been with Quiznos Analytics for the past six years. I've been working with the Quiznos Analytics platform for over 10 years. I've been focused on Quiznos Analytics Sense for the last 5 or 6 years. I tend to focus on the Data Modeling process all the way into Dashboard design and creation, as well as the more recent features in the Quiznos Analytics Cloud Platform, like Quiznos Analytics Alerting. Or, for instance, the Quiznos Analytics Answers product launch is coming up. So I've spent the last month getting up to speed on the pre-release version of that product. I have about 25 plus years in this Business Intelligence game. And that's my background.
+
+139
+00:14:18.140 --> 00:14:19.910
+Franklin Dorsey: We are very excited to begin this engagement. I see we are in good hands.
+
+142
+00:14:23.200 --> 00:14:35.450
+Bob Jones: I hope so. I very much enjoy what I do. This engagement appears to present a lot of opportunity to build a great foundation. I'll also be supported by the Quiznos Analytics Professional Services folks that you've been on the phone with during your previous calls this past April and June. So, for instance, Vincent Martin, is someone who, one of the people I would report up into and he's in management of Quiznos Analytics Professional Services, but he has many years under his belt of delivering Quiznos Analytics implementations and Andrew Lancer again, also from a platform implementation and maintenance. And obviously because I'm with Quiznos Analytics, I have access to resources. So if there are questions that come up along the way, and then also I can give you, I'm happy to provide advice about how to navigate Quiznos Analytics as an organization. So you know, in terms of support. getting previews or access or things like that without they basically skipping, skipping the line. So alright, and I think we've talked pretty well about. So I appreciate the you sharing the team from your side. Based our conversation thus far, I think we've answered the 'Overview' question. Alright, let's discuss how to answer the 'Post Implementation' question. I guess this would be a good time. So for Key Milestones and Post-Implementation, which we can kind of consider Post-Implementation, a Milestone as well. I understand what you shared with me about. We want to see what we want to see, what we can get done in a 40-hour block. and then provide an opportunity for you all to digest what has been delivered. and then come back with another block. Ideally 40-hours to address what comes up during that break period.
+
+157
+00:16:26.080 --> 00:16:27.320
+Franklin Dorsey: That's super!
+
+158
+00:16:27.360 --> 00:16:36.260
+Bob Jones: Okay? So I think kind of naturally, then, would be, for instance, a Milestone would be the end of this, the end of the 1st block. The beginning of the second block which would largely be you and your colleagues presenting what you want to get out of the second block of time, and then a meeting or review at the end of that second 40 hours. And so one thing I can think of for this week, or say over the next 24 to 48 hours would be for you and I to create some sort of work plan for this 1st block, and what we anticipate currently for the second block, because we don't quite know what you're going to get, but I feel like, perhaps by the end of the day tomorrow, Tuesday, July 16, 2024 or before noon on Wednesday, July 17, 2024. we're gonna want to agree on and create a Phase One Work Plan Document that details what are we delivering this week in terms of whether we'll have enough time to fix the Quiznos Analytics ServiceNow Data Connector, how much can we get built out of the Booking Data Dashboard, and then for the Training Material? And I know it sounds a little silly that the Engagement's Phase One will only be 5 days long, and we wouldn't review a first draft of the Phase One Work Plan Document until the end of the Engagement's Phase One second day or the beginning of the Engagement's Phase One third day. Does that make sense that within the next day and a half to 2 days we draft a Phase One Work Plan Document? I'll draft the initial Phase One Work Plan Document that we can review and agree that it contains an accurate depiction of our Engagement Roadmap or Engagement Work Plan for delivery of Engagement Phase One activities and deliverables. Do you agree with that approach, Filip?
+
+183
+00:18:22.730 --> 00:18:29.522
+Franklin Dorsey: All right. Great. That sounds good, and so I don't really know about in terms of the break how we incorporate that into the current Engagement.
+
+184
+00:18:29.950 --> 00:18:38.870
+Bob Jones: The beauty of being the client is you're the client, so we'll figure out how to make this work. And another reason, I think it's important that we document these kinds of things. If whatever reason, I'm not the person who is working with you at the second piece. I anticipate I will be. But if there's a break we'll just need to make sure about that. We'll make sure there won't be any hiccups or learning curve if a different Quiznos Analytics Professional Services Consultant is assigned to complete the Engagement's second half (i.e., Phase Two). Alright. So that sounds good for the Engagement's 'Results and Achievements' question. Obviously. I think this would be more of. You've shared with me. What your objectives are in relation to providing the details to answer the 'Quantifiable Improvements' question. I believe 'Quantifiable Improvements' would be described as improvements over Quest Enterprises's state of operations prior to implementing it's Quiznos Analytics Cloud Platform and the completion of this engagement. We don't need to be slavishly thorough here. But are there things just off the top of your head that you're associating with Quest Enterprises achieving the three things we talked about earlier.
+
+198
+00:19:41.390 --> 00:19:44.179
+Franklin Dorsey: Yes, that's exactly how we can put it. If we accomplish the three things we talked about earlier, Quest Enterprises will get a Booking Data Dashboard with reports and associated functionality at the end of the Engagement's entire eighty-hour block of billable hours. And Quest Enterprises will have no further questions, and will understand how to start maintaining and improving the Booking Data Dashboard. That's a 'Quantifiable Improvement' associated with achieving the first of the three things we discussed earlier during this conversation. That will be a measurable result for Quest Enterprises. The second measurable result will be resolving the current issue preventing Quest Enterprises's use of the Quiznos Analytics ServiceNow Data Connector: If the Quiznos Analytics ServiceNow Data Connector will be working for the ServiceNow data that we want to begin importing into Quiznos Analytics Sense, and we are able to understand how to write the connection for the next data sets that we will want to put in. That's another measurable achievement for Quest Enterprises. The third 'Quantifiable Improvement' will be the creation of a Data Catalogue or Data Catalogue for the Quest Enterprises Teams using the Quiznos Analytics Cloud Platform. And Quest Enterprises knowing how to improve the Data Catalogue and and use it productively. That achievement would be the 3rd thing.
+
+210
+00:20:44.810 --> 00:20:55.619
+Bob Jones: Okay, and when you say Data Catalog, are you referring specifically to the Quiznos Analytics Data Catalog component? Or are you using the term 'Data Catalogue' in the generic sense?
+
+211
+00:20:55.900 --> 00:21:21.490
+Franklin Dorsey: I am using the term 'Data Catalog' more generically. I'm using it more generically. We would want to introduce, like kind of a Data Catalog as a concept in Quest Enterprises. In general, we do not have. I think we do not have the Quiznos Analytics Data Catalog product if that's an actual Quiznos Analytics product. So when I refer to a Data Catalog, I'm thinking about a place where people would be able to just go in, see what's available and read about this a bit to understand the data points that are there, and just make sure that they know what they can do with it.
+
+215
+00:21:31.860 --> 00:21:41.219
+Bob Jones: Okay, I understand what you are saying, and we can come up with an initial scalable Data Catalog solution that you could implement just within Quest Enterprises's existing Quiznos Analytics Cloud Platform, using Quiznos Analytics Sense. So, for instance, whether it's within individual dashboards having one sheet that provides a Data Catalog containing the Dimensions and Measures, with more with metadata associated with those elements, even rolling up the details for easy investigation. So one step would be at the individual application or dashboard level within boiling it up so that that information would be centralized so that the maintenance of it. So, for instance, the Quest Enterprises Finance Team Members using Quiznos Analytics Sense could have, or will have ownership of that, so it won't be it is struggling to try and read minds or chase people to see if things have been updated. Alright. And so I think that covers that beautifully. Now let's discuss the question 'Adoption Usage'. I think the answer to this question will be pretty straightforward. As you said, Quiznos Analytics Cloud is a new platform for Quest Enterprises. So we should just be able to use the existing Quiznos Analytics Sense Administration Monitoring dashboard to measure New User rates as well as System Usage Rates by multiple dimensions. Additionally, I can show you how to easily access the data populating that dashboard if for whatever reason you want to build a separate dashboard or extend that dashboard group.
+
+239
+00:23:30.630 --> 00:23:32.469
+Franklin Dorsey: Excellent. Yes.
+
+240
+00:23:32.550 --> 00:23:35.669
+Bob Jones: So far we've attempted to answer the 'Results and Achievements' question, and we've also attempted to answer the 'Adoption and Usage' question. That brings us to the 'Financial Impact' question. To answer the 'Financial Impact' question we need to calculate Quest Enterprises's anticipated Return on Investment (ROI). Do you have thoughts about whether Quest Enterprises is anticipating a positive Return on Investment from this engagement, and if there are specific use cases we can identify and use to measure and report the Return on Investment anticipated from successfully completing this engagement?
+
+246
+00:24:07.570 --> 00:24:13.390
+Franklin Dorsey: It will be time saving definitely because we are trying to move this small project. Let's call it a Proof of Concept (POC) of Quiznos Analytics should be like a guidance for bigger teams to start adopting Quiznos Analytics. And with this engagement we will not see a lot of improvement. it will be because Amal will be offloaded from the manual things that he would have to do on the spreadsheet and importing data and changing in data manually. but and of course, the way that the visualizations will be prepared would be much easier to understand and beautiful, not like we have now. So that's like minimal level that we will go with. But the next step will be to decrease the number of time that people are spend spending on preparation of any kind of reports that we have in the Revenue Operations Team, for example, or in and in the wider Financial Team or in Marketing. Maybe this. They are all connected with spreadsheets, and with exporting and importing data. Everything is in different places. So it's hard to find. It's not unified between the teams. So if we will be able to adopt Quiznos Analytics in all of those teams, it's going to be a time saver, and so resulting in cost savings.
+
+262
+00:25:46.430 --> 00:25:57.116
+Bob Jones: That's perfect. I appreciate it. I do want to apologize. I'm about to get up and take a toy away from my dog, Sadie, which I'm not sure if you can hear the squeaking she's making from playing with the toy.
+
+263
+00:25:58.321 --> 00:26:05.700
+Franklin Dorsey: I also have one, my son, just my son just woke him up. So it's the same thing, I guess.
+
+265
+00:26:07.260 --> 00:26:19.410
+Bob Jones: So. Yeah, that sounds like we're in the same boat here. Thank you for that. That is very helpful. It raises one question for me, which is in terms of dashboard development. Upfront initially or moving forward. How will the Quiznos Analytics Sense dashboards be built? Will Quest Enterprises have a team of Quiznos Analytics Sense Application Developers who'll be building those dashboards based on requirements from end users? Or is the Quiznos Analytics Sense dashboard development going to be blended where you're going to be empowering end users to create their own dashboards.
+
+270
+00:26:41.140 --> 00:26:51.769
+Franklin Dorsey: More of the second approach. I will be like a Data Engineer Architect that will be bringing the data in, together with the Data Stewards. I'll be preparing the data sets, and then the Data Stewards, or particular Quest Enterprises Department Teams will be responsible for preparation of the of the Quiznos Analytics Sense dashboard visualizations. That's why we would want to develop this kind of Training Material we've been discussing, that will simplify the learning curve for them. We will also, me and Amal will be like the guidance for the newcomers, and we will help them adopt and understand how to use Quiznos Analytics Sense.
+
+277
+00:27:25.870 --> 00:27:31.539
+Bob Jones: So that's very helpful. What I would foresee is that we will have two different segments of Quiznos Analytics Users across Quest Enterprises. I would see the priority being, and forgive me because I don't know enough about your background. But we would want to make sure that there's a structure around how Quiznos Analytics Data Models are created. So I would see if you're gonna have end users creating the front end, which is which is great. I mean, that product is, you know, kind of architected for that. You'd wanna have a library of Data Models. That would be plug and play if you will, or for instance, beginning with QVDs. then Quiznos Analytics Sense applications that contain Quiznos Analytics Data Models that could then just be attached, if you will, to a new Quiznos Analytics Sense application. And so the end user would never have to think about what Data Model they're using. All they're doing is just focusing on creating visualizations based on known dimensions and measures. So that sounds like exactly how you would want to approach this.
+
+293
+00:28:55.586 --> 00:29:12.230
+Franklin Dorsey: If there will be some missing pieces in the data sets. I would expect the Data Stewards to come to me, and we will work out the changes that should have been done on the data sets that are connected to the, to the Data Models, to the Quiznos Analytics Sense applications.Okay, I understand what it is. But I'm trying to learn it. And I would appreciate your help with it. If we will be using any of these during this engagement, I would be happy to see it.
+
+295
+00:29:29.060 --> 00:29:37.039
+Bob Jones: Yeah, absolutely. We can use the Booking Data Dashboard as a Use Case.
+
+296
+00:29:37.220 --> 00:29:41.620
+Franklin Dorsey: Excellent. So as a Use Case for the best practices when designing and developing a Quiznos Analytics Data Model, for instance?
+
+297
+00:29:41.770 --> 00:29:54.069
+Bob Jones: Correct, the best practice for Quiznos Analytics Data Model Development is an approach approximating a 3-tiered data architecture for the target Quiznos Analytics Sense Dashboard Application, which is a very fancy way of saying a base layer of where you would say import tables as a select star, and you would import those, let's say, on a daily basis. Each table would be converted each night into a QVD Document. And then that way. There's a single instance of that database table as a Qvd. That can be reused many times, and then the second layer of the 3 pieces would be a data model where you are. You create a Quiznos Analytics Sense application, and then using imported QVD documents. and you would then design a Data Model to support a particular domain. So, for instance, the Quest Enterprises Finance Team. That Data Model would then be reusable. The objective would be a Data Model that could be reused by anyone who's interested in finance for whatever specific objectives they have. But everyone would be using the same data. and then the final tier of it would just be in the User Interface (UI). We'd make sure that there was a consistent. We'd want to create master dimensions and master measures. So, for instance, if finance, if Perkona, for instance, had operating units in different geographies or different market segments that perhaps have a different formula for revenue. We would want to create standard master measures for those.
+
+315
+00:31:34.990 --> 00:31:37.020
+Franklin Dorsey: Exactly.
+
+316
+00:31:37.180 --> 00:31:48.989
+Bob Jones: Okay, moving on. What I heard you say at the beginning of this call was Quest Enterprises beginning their rollout of the Quiznos Analytics Cloud Platform modestly and then iterating and scaling. And so what we can do during this engagement is to use the Booking Data Dashboard as an opportunity to accomplish that. So it sounds like we wanna make things that we'll use this first phase (Phase One). I like to use the phrase, 'Self-Evidencing'. Basically what it is is the the thing we build will be an example of how to do what you want to do. So the objective is, it won't just be. We need to create booking dashboards. But we need to create booking dashboards in a method in which that deliverable is instructive of how to begin creating other dashboards in other areas of the business.
+
+324
+00:32:38.490 --> 00:32:39.890
+Franklin Dorsey: Sounds excellent.
+
+325
+00:32:39.970 --> 00:32:44.310
+Bob Jones: Okay, yeah, I don't want to over promise. But I think that's that will be a good approach.
+
+326
+00:32:45.110 --> 00:32:47.080
+Franklin Dorsey: That sounds like a good approach for us, right? And that's exactly what I was thinking about this kind of structure, where we will deliver self service for the users that will be educated enough to use it.
+
+328
+00:32:57.620 --> 00:33:03.126
+Bob Jones: That's great. So it sounds like, that's really the end game for you. Okay, yeah. I think that really does kind of it imposes a structure on how we're gonna want to get things done, so that you have a chance to work with it. I think it means more of a focus. I think it means more of a focus on the the development process, whether that's in the back end or the front end. Let's turn our focus to another very important thing to be accomplished during this engagement, resolution of the issue with the Quiznos Analytics ServiceNow Data Connector. I think what I'd like to do is if we can take a look at that. and then I could just quickly identify. If it's something that's either going to take me too long. or isn't something that I'm capable of getting done. I can just quickly hand off that task and the associated hours to someone who does it all day long.
+
+340
+00:33:55.560 --> 00:33:56.540
+Franklin Dorsey: Yes, that sounds like a good  approach.
+
+341
+00:33:56.650 --> 00:33:58.929
+Bob Jones: This approach will ensure I'm using my billable hours effectively. So either I can get it done, or I'm going to get somebody who can get it done for us and I won't distract myself with the issue you're experiencing when attempting to use the Quiznos Analytics ServiceNow Data Connector. Can you confirm that you're only using the Quiznos Analytics ServiceNow Data Connector within Quiznos Analytics Sense applications? Or are you attempting to use the connector in external applications or pipelines that you're building?
+
+346
+00:34:24.940 --> 00:34:31.640
+Franklin Dorsey: I was trying to use the Quiznos Analytics ServiceNow Data Connector in Quiznos Analytics Sense. I was trying to connect to ServiceNow, and I was trying to pull in some data directly from ServiceNow and it didn't work with the normal approach, and then I was by Quiznos Analytics Support that I should try at least to use the API calls. And so I tried and seemed like some of the tables were were being uploaded, but some of them were problematic, and I'm not sure why it's happening. Maybe it's it might be our data. But if it is, I also would want to understand how we can handle things like that.
+
+352
+00:35:06.960 --> 00:35:10.709
+Bob Jones: Yeah, absolutely. I doubt the issues is caused by Quest Enterprises's data, but we can either reopen your original Quiznos Analytics Support Ticket and escalate the assigned Priority or submit a new Quiznos Analytics Support Ticket with an appropriately urgent Priority level assigned to it. I think we've addressed each of the Customer Success Snapshot questions except for the 'Visuals' question. We can proceed without attempting to answer the 'Visuals' question during this call. Prior to our meeting today, my Quiznos Analytics colleagues showed me screenshots of documentation you put together for this particular effort, such as definitions and filters. Is that documentation part of the document you are planning to send me after this call?
+
+360
+00:36:07.520 --> 00:36:12.439
+Franklin Dorsey: Yes, that's probably from the documents that I'm going to send to you. And those would be associated with the Booking Data Dashboard.
+
+361
+00:36:13.630 --> 00:36:14.640
+Bob Jones: Okay,that's great. So what I'll do is when we've completed this call, I'll receive those and and go through those. And again, it's like a 99% of the instances. I never get that level of documentation. So it's it's great. Are there any other materials or things like that that I'm going to be able to review, or that you want me to have access to?
+
+370
+00:36:46.470 --> 00:36:54.039
+Franklin Dorsey: For now we only have this document prepared by Andrew Neighbor. So he prepared this, based on his knowledge how it could be prepared. I reviewed it with him, and the level of details that is included here. We suppose that it is enough, but if it wouldn't, we would want to also understand what kind of level of details would you need to to move on and to understand that the end goal, because it might not be everything. But this is the only document that we have, because there aren't many Use Cases. So we didn't prepare anything else.
+
+373
+00:37:25.450 --> 00:37:27.920
+Bob Jones: Understood. I'll review it. And again, I rarely receive anything written from clients at the start of an engagement, so I appreciate receiving the document prepared by Amal Niak.
+
+377
+00:37:48.190 --> 00:38:00.219
+Franklin Dorsey: I'm glad that I'm doing great job.
+
+378
+00:38:01.078 --> 00:38:06.120
+Bob Jones: I'll share my screen here. And let's just see if I have access to anything yet? Please let me know if you're able to see my screen.
+
+382
+00:38:21.400 --> 00:38:22.470
+Franklin Dorsey: I see your screen. You don't have access to anything yet. Let me add you to the necessary groups in the Quiznos Analytics Admin Console. Okay, I know what I have to do. I'll add you to the groups. And do you have 5 minutes to ensure you have access to the relevant Quiznos Analytics Sense applications on the Quest Enterprises Quiznos Analytics Cloud Environment?
+
+388
+00:38:48.975 --> 00:38:51.639
+Bob Jones: Yes, I'm available now to ensure I have access to the relevant Quiznos Analytics Sense applications on the Quest Enterprises Quiznos Analytics Cloud Environment. If possible, it's best to assign me Root Admin privileges right at the outset of the engagement. Also, does Quest Enterprises have access to Quiznos Analytics Continuous Classroom Training (QCC)?
+
+398
+00:39:52.100 --> 00:39:57.479
+Franklin Dorsey: Yes, Quest Enterprises's Quiznos Analytics users do have access to the QCC resources. Additionally, Andrew Neighbor and I will be attending a two-day Quiznos Analytics Virtual Instructor-Led additional training class focused on Quiznos Analytics Sense Dashboard application development.
+
+404
+00:40:17.900 --> 00:40:23.489
+Bob Jones: We can create relevant bundles of QCC Training Classes for your new users to take advantage of their access to the QCC resources. QCC training really is excellent. Not only is it very bite size in terms of video instruction, but it comes with quite a bit of sample data, as well as Quiznos Analytics Sense applications that mirror the content reviewed during the the lessons, and things like that.
+
+417
+00:41:18.210 --> 00:41:30.619
+Franklin Dorsey: That's exactly what I would want to do with you at the end of this engagement, after we've accomplished our two main goals. I would want to go through this and just collect like the like. You said the curriculum for the new users that will come in and we'll we will just address the learning curve here.
+
+419
+00:41:35.510 --> 00:41:39.519
+Bob Jones: Okay, great. So no matter what else we focus on getting done in the first week (Phase One), as long as we carve out 2 or 3 hours we'll be able to, at a minimum, put together QCC Training Roadmaps for each of the different Quest Enterprises Quiznos Analytics User Types. We'll be segmenting the Quest Enterprises Quiznos Analytics User base and creating customized lists of available QCC Training Classes for each of the segments.
+
+423
+00:41:56.150 --> 00:41:57.719
+Franklin Dorsey: Great. That's the approach we can use to meet this engagement's objective of addressing Quest Enterprises's Quiznos Analytics Training needs. Alright to the instance. You should see something more now, maybe. Okay.
+
+425
+00:42:08.550 --> 00:42:10.660
+Bob Jones: Great. Okay, thanks.
+
+426
+00:42:10.850 --> 00:42:12.480
+Franklin Dorsey: I think the Booking Data Dashboard is the application in which I was encountering the issue with the Quiznos Analytics ServiceNow Data Connector. Probably this one is right.
+
+431
+00:42:30.640 --> 00:42:38.265
+Bob Jones: Let's make a point of inspecting the Booking Data Dashboard's data model, so I understand how to work with the application.
+
+432
+00:42:38.540 --> 00:42:40.230
+Franklin Dorsey: Before we do that, you're probably missing some privileges necessary to view the Data Connections referenced in the application's Data Load Script, higher level access. Which privileges should I set?
+
+436
+00:42:54.450 --> 00:42:59.790
+Bob Jones: I will take a look for you in just a second. Let me just go into the Data Load Editor to confirm I have access to all the necessary Data Connections. I have access to the Salesforce Data Connection, but I don't have access to the ServiceNow Data Connection.
+
+440
+00:43:12.190 --> 00:43:16.930
+Franklin Dorsey: Let's see, yeah, the ServiceNow Data Connection does exist, but because it's not here I'll add you to the second group. Yeah, that's right.
+
+442
+00:43:22.960 --> 00:43:28.220
+Bob Jones: Let's also review the specific issue you're encountering with the Quiznos Analytics ServiceNow Data Connector. If I can't solve it for you in a timely manner, I'll pull in someone who can, and I can have them watch this section of the video so you don't have to go over it again with them.
+
+446
+00:43:44.860 --> 00:43:47.210
+Franklin Dorsey: Okay, I think we should see it. Well, it's not in this application. It's okay. Let me try selecting the 'Business Services' Data Connection. That should be it. It doesn't show up. Oh, yeah. So I understand. I get it. So it's not in there.
+
+452
+00:44:23.690 --> 00:44:30.330
+Bob Jones: I understand. And you were encountering an issue after using the wizard to create a new ServiceNow Data Connection in the Data Load Editor?
+
+453
+00:44:30.950 --> 00:44:35.030
+Franklin Dorsey: Correct, and the ServiceNow Data Connection I created didn't work. And then, within the one of the applications I have a data load script where I started manipulating the data load script. And there I was able to identify what was the problem with which table, but I was not sure why.
+
+457
+00:44:55.090 --> 00:45:02.600
+Bob Jones: If you can share your screen we'll open that application and take a look.
+
+459
+00:45:04.290 --> 00:45:06.210
+Franklin Dorsey: Okay, great.
+
+460
+00:45:07.090 --> 00:45:09.569
+Bob Jones: Do I have access to the Data Connections I require to perform this engagement? I have access to the 'Business Services' and 'Finance' Data Connections, so do I have what I need? Are there any other sources of data like, for instance, for booking data or Salesforce, where the booking data is?
+
+466
+00:45:31.850 --> 00:45:34.030
+Franklin Dorsey: Salesforce contains the Booking Data, and ServiceNow is going to be used for a different purpose. There will be another application that we will probably join with the Salesforce data. But for now we are just trying to make the connection for ServiceNow.
+
+468
+00:45:48.650 --> 00:45:52.870
+Bob Jones: Okay, just for my own reference. And to ensure I'm using the same business language and business terms that you are, what is Quest Enterprises's specific use of the ServiceNow platform that generates the data being used by this Quiznos Analytics Sense dashboard application? Is the data associated with Customer Service by Quest Enterprises for its customers?
+
+470
+00:46:09.050 --> 00:46:11.969
+Franklin Dorsey: May I share my screen?
+
+471
+00:46:14.030 --> 00:46:15.450
+Bob Jones: Oh, that'd be great. Yeah. Let me stop sharing my screen now.
+
+473
+00:46:21.670 --> 00:46:33.740
+Franklin Dorsey: Right? So my screen is showing the Quest Enterprises Quiznos Analytics Cloud Analytics Home page. The applications visible on the page I'm currently sharing will be connecting to Quest Enterprises's Jira system. I didn't have a lot of problems with the Quiznos Analytics Jira Data Connector, so for now there will be some things that I might ask you for assistance later on. On my screen now is the Booking Data Dashboard, the application that is using the Quiznos Analytics Salesforce Data Connector. And on my screen now we have the 'ETR (Entitlement, Time, Review) Synchronization Quality Assurance Dashboard'. The 'ETR' Dashboard uses two Quiznos Analytics Data Connectors: the Quiznos Analytics Salesforce Data Connector and the Quiznos Analytics ServiceNow Data Connector.
+
+476
+00:46:57.260 --> 00:46:58.150
+Bob Jones: Okay, thank you for showing me these dashboards.
+
+477
+00:46:59.560 --> 00:47:01.150
+Franklin Dorsey: And here on my screen is the Data Load Script Editor from the 'ETR' Dashboard in which I'm attempting to load data from Quest Enterprises's ServiceNow application. And on my screen that I'm currently sharing is the Data Load Editor Sheet in which I'm using the Quiznos Analytics ServiceNow Data Connector. And when I attempt to run a reload of this application an error related to the Quiznos Analytics ServiceNow Data Connector is thrown and the reload fails.
+
+483
+00:47:36.390 --> 00:47:40.509
+Bob Jones: Thank you for the explanation. I'll get a screenshot just as soon as the Error Message pops up on your screen. What does the 'ETR' stand for in the name of Quest Enterprises's ETR Dashboard?
+
+486
+00:47:58.950 --> 00:48:01.249
+Franklin Dorsey: 'ETR' stands for Entitlement Time Review.
+
+487
+00:48:01.440 --> 00:48:02.310
+Bob Jones: Thank you. Can you please explain the meaning of 'Entitlement Time Review'?
+
+489
+00:48:05.950 --> 00:48:14.550
+Franklin Dorsey: 'Entitlement Time Review' is a concept used by our Services Department, like Managed Services, are selling block of hours to our customers and the Service Entitlement for the hours that each customer can use is what we are calling an Entitlement. This is something that is generated, based on the contract in Salesforce, and we are moving this information to Quest Enterprises's ServiceNow system, and ServiceNow controls the amount of hours that is being utilized by specific customers. And then the 'Entitlement Time Review' refers to a report that is telling us how many hours each customer used for a particular month.
+
+497
+00:48:58.460 --> 00:49:01.859
+Bob Jones: Understood, thank you. That's very helpful. Alright. I'm not going to get excited that your application's reload process hasn't failed yet. I'm assuming the failure doesn't come until later in the reload process?
+
+505
+00:50:00.230 --> 00:50:01.265
+Franklin Dorsey: Exactly. I'm not sure where which table it was, I think. Oh, that's seems like Salesforce already.
+
+508
+00:50:13.140 --> 00:50:18.350
+Bob Jones: Well, it's helpful to know what is working as well. So, has the Quiznos Analytics Data Load Editor you are sharing on your screen thrown the anticipated Error Message yet?
+
+509
+00:50:19.780 --> 00:50:20.600
+Franklin Dorsey: No.
+
+510
+00:50:20.960 --> 00:50:23.360
+Bob Jones: I see an Error Message has just been thrown. Is it the same Error Message that you received before?
+
+511
+00:50:23.660 --> 00:50:26.735
+Franklin Dorsey: No, it's a different issue. I think I removed the problematic line in the Data Load Editor script that loads the problematic table using the Quiznos Analytics ServiceNow Data Connector, just to see if the remaining data loads without error. I'll have to add this back. I think this was problem with task table. And even though we didn't specify particular fields that we would want to ingest like we wanted to, ingest only the 'Id' field and some other specific fields. And the problem with the ingestion was in fields that were not selected by us. And that's something that I don't understand.
+
+518
+00:51:07.580 --> 00:51:10.565
+Bob Jones: Okay, yeah, that sounds like something we may want to address somewhere within the scope of this Engagement.
+
+519
+00:51:11.850 --> 00:51:14.290
+Franklin Dorsey: Great, that sounds like it should be.
+
+520
+00:51:15.000 --> 00:51:16.133
+Bob Jones: It sounds complex enough that I will want to dive into that a bit more. I would want to say quickly, though with that circular reference. I think this is one of the one of the areas of focus we'll include in terms of for the back end and best practices will be optimizing the Data Models that are built to support the front end Quiznos Analytics Sense application development (i.e. User Interface Design). So, for instance, in the Quiznos Analytics Sense application you currently have open on your screen, let's go to the Data Model Viewer, please. And this is also part of I'm ignorant of your background. Do you have a background in relational database design or any other areas like that?
+
+531
+00:52:07.540 --> 00:52:16.579
+Franklin Dorsey: Oh, yes, in a lot of things I have background in programming.
+
+533
+00:52:18.990 --> 00:52:24.770
+Bob Jones: Understood, so some of the Data Modeling issues I'm viewing, like Circular References and Synthetic Keys, are present because you're early in the process of all of your testing and development and things. So we'll work to make sure, because the same rules would apply in building a Quiznos Analytics Data Model, as it would with any type of Relational Data Model, where you want to model your data using a Dimensional Model, like a Star Schema, or a Snowflake Schema. These modeling techniques will generally be the most performant for modeling data in Quiznos Analytics. And there are other data modeling techniques and practices, depending on the data volumes and other factors. I'm assuming the particular issue you're sharing on your screen here right now, we're you're just trying to validate that the connections are working correctly. Is that accurate?
+
+543
+00:53:09.170 --> 00:53:12.310
+Franklin Dorsey: Exactly. I was trying to reflect the the query that I'm using in a different system, currently, because we also have a Metabase. We have this kind of dashboard and I was trying to move it to Quiznos Analytics. But that's the problem that I faced. This is probably not something that should exist. but it is something that is necessary for us to understand this, because there are in, I would have to show you, the relevant query in the Metabase. So you can understand, what are we trying to achieve? It would be easier to do it this way. Let's maybe we do that tomorrow or Wednesday. I will prepare myself for it. I can prepare a document, similar to the one I will already be sending you, that will contain all of the details that we want to do with the ETR Dashboard. And then we could go through this when I'm going to be ready for now, I don't think it would be waste of your time.
+
+561
+00:54:26.550 --> 00:54:38.479
+Bob Jones: Yeah, agreed. I think it's we can be more productive. I can also just show you some techniques that are specific to Quiznos Analytics in terms of how to overcome Circular Reference issues, like that one.
+
+562
+00:54:39.074 --> 00:54:46.980
+Franklin Dorsey: Understood that the data requires. You know that. And that's the only way. It is possible that I'm just not importing the data in the right way, because maybe we don't really need this relations here. And I could just import whole tables and just do the manipulation of the data in a different place. I agree it depending on. And I think it is situated.
+
+567
+00:55:08.750 --> 00:55:24.599
+Bob Jones: It's situationally dependent. And so sure let's put this on the parking lot, and we can. You and I can go through this. I'll better understand it. And but if you could modify this application to put back in the lines that are generating the able error.
+
+570
+00:55:31.520 --> 00:55:41.290
+Franklin Dorsey: Yes, I will do.
+
+571
+00:55:41.540 --> 00:55:42.640
+Bob Jones: That would be great, and what I'll do is I'll run it. I'll get that error, and then I'll just let you know quickly whether I can address it or I'll get someone to help me. And just so we're clear. It's, you know, if I get someone to help me, the hours that would be required would then be carved out of whatever time we have, so it wouldn't be. Someone is coming in. And then trying to increase this engagement's total billable hours. It's just I may delegate this just so I can stay focused on the other elements of this engagement's Work Plan.
+
+581
+00:56:14.850 --> 00:56:22.790
+Franklin Dorsey: Sounds great. Yeah, good. And would you like me to send you the video of this meeting or the transcript of this meeting?
+
+583
+00:56:24.870 --> 00:56:31.460
+Bob Jones: I guess both. If I'm able to have the video is less important. The transcript will be very important to me. I'll review the transcript of this call, spend time cleaninng up and enhancing the contents of that transcript. Over the next few days, using the contents of the enhanced transcript (reflecting what we've covered during this call), I'll prepare a draft Engagement Work Plan, anticipated Engagement Deliverables, and a draft of the Quiznos Analytics Customer Success Snapshot document for this engagement. Additionally, I think meeting at least once a day, because this is such a short amount of time it's going to be important to meet at that frequency at a minimum. What time of day each day this week works for the two of us to meet? The daily meeting itself doesn't need to be very long, the purpose is to ensure we're touching base on a daily basis.
+
+593
+00:57:10.720 --> 00:57:11.980
+Franklin Dorsey: Every weekday morning this week at 9:00 a.m. ET is a convenient time for me.
+
+594
+00:57:12.030 --> 00:57:13.620
+Bob Jones: Perfect. Okay. Yeah. So if half an hour, probably. Yeah, it can be. Yes, we treat that meeting the same as an Agile Daily Standup Meeting. And then if we decide, for instance, we need to do a different meeting, for instance, to review what we just talked about, then we don't need to do the scheduled daily 9:00 a.m. ET meeting that particular day. Because I just anticipate that. I just want to make sure we're touching base every day. But let's yes, we'll see how we will do with the, with the Booking Data Dashboard, because that's the most important thing.
+
+601
+00:57:58.840 --> 00:58:08.390
+Franklin Dorsey: I will invite Andrew Neighbor to those meetings, so he will be able to explain you any details that you might have questions about regarding the booking data. and we'll see how it will go regarding the development. And if that's going to be necessary. We can have these those meetings, and if not I don't know if you think it is necessary, we can meet. Okay. So one of our one of our needs is also something like cooperation with you. So we will also understand how are you performing the work you'll be doing for us during this engagement? And maybe every day. Maybe that's a good idea. You would show us how did you do stuff that that was done so we can also learn while you will be doing things.
+
+609
+00:58:38.790 --> 00:58:48.560
+Bob Jones: That's a great way to go as I'm looking now. I just opened up the Salesforce Data Connection. I'm looking at the Salesforce schemas, tables, and fields. Do I have access to all of the Quiznos Analytics Data Connections contained in the Quiznos Analytics Sense applications you've shared during this call? Will it be clear if the applications as well as the document you're gonna provide me? Will that give me what I need to get up to speed with the particular tables I need to be working with? Or are all of the data I need to understand imported into the Booking Data Dashboard?
+
+612
+00:59:14.000 --> 00:59:18.129
+Franklin Dorsey: Everything that's needed to prepare the reports are based on the document that I'm going to share with you. I prepared this data set based on the export to spreadsheet that we are getting from Salesforce. So every data point that was in that spreadsheet is currently available in Quiznos Analytics. And the document that you will receive from me is referring to those fields which are available in the Booking Data Dashboard Quiznos Analytics Sense application.
+
+620
+00:59:48.960 --> 00:59:54.550
+Bob Jones: Okay, alright. Great. Okay. And I'm looking at the Booking Data Dashboard and I see, on the 'Dev dashboard' Sheet, eight KPI Visualization Objects.
+
+623
+01:00:01.520 --> 01:00:08.980
+Franklin Dorsey: Exactly. Those are the numbers that I was trying to compare with a similar report from Salesforce. Quest Enterprises must be perfectly sure that there are no discrepancies between the data displayed in Quest Enterprises's Salesforce system and the data displayed in Quest Enterprises's Quiznos Analytics Cloud Platform. So we must also be able every day to show you the numbers that we see in Quest Enterprises's Salesforce system and be able to tie out those numbers with the Quiznos Analytics Cloud Platform data. Currently, I am not able to achieve a 100% validation of the data from the Salesforce and Quiznos Analytics systems. There are some issues that we are aware about, like Currency Conversion Rates for the exchange for the various currency types contained in the Salesforce operational data tables, and probably some more issues. But that's something that Andrew Neighbor will be able to explain more. And all of the things that should have been applied to this data set are in the document that I will send you after this call.
+
+634
+01:01:00.650 --> 01:01:01.560
+Bob Jones: Understood, thank you. So what I'll do will be, you know. Take the transcript. I'll use that to assist me with putting together a work plan and deliverables which we can go over tomorrow morning. I'm gonna go through the Booking Data Dashboard application along with the document you'll send me to understand the Measures used in the Quiznos Analytics Sense Booking Data Dashboard application. And so would part of what you want to accomplish during this first week, or 'Phase One' objectives be for me to focus on the Booking Data Dashboard Quiznos Analytics Sense application and work with you to lay out a few Sheets populated with relevant Data Visualizations populated with the Measures contained in the document you're sending me?
+
+643
+01:01:38.740 --> 01:01:42.239
+Franklin Dorsey: Yes, with a lot more Measures in addition to the ones contained in the document I'm sending you. But yes, exactly.
+
+644
+01:01:45.010 --> 01:01:50.759
+Bob Jones: Alright. And we know that with the Booking Data Dashboard, you're having issues with getting the data to tie out correctly So I think that's another one. And maybe that's during the session with them all is we can uncover. He can identify for me which data, elements or measures aren't tying out with the Salesforce database. And then we can dig into that issue.
+
+651
+01:02:13.600 --> 01:02:24.390
+Franklin Dorsey: Yes, I'm sure she will be able to point that out. We will be both on the call, so we will definitely be able to guide you, and we will find that. But I'm not able to say what exactly is, is wrong with that. At this point we will have to try. The currencies will have to try to make sure that the scope of the of the range of the dates is correct. If, yeah, there are couple of filters that are applied on the Salesforce side that I'm not sure if I was applying correctly in Quiznos Analytics.
+
+656
+01:02:50.530 --> 01:03:00.519
+Bob Jones: Understood. When could you, Andrew Neighbor and I have an hour to have that meeting? Could we do that by the end of the day tomorrow, Tuesday, July 16, 2024?
+
+657
+01:03:01.850 --> 01:03:16.719
+Franklin Dorsey: Most probably by the end of the day I'm not going to be available, because that's going to be very late for me. I'm based in Poland.
+
+658
+01:03:17.200 --> 01:03:23.030
+Bob Jones: Oh, when I say end of day, I'm sorry. So could we, would it be possible to do tomorrow morning my time, here in Boston, USA?
+
+659
+01:03:23.590 --> 01:03:24.559
+Franklin Dorsey: I'll have like one or two hours till the end of my day here in Poland. So that's since I will have a call at 9:30 a.m. ET for an hour, or maybe not an hour. But that's like a team call. So I need to be there, sure I'm out will be free. So he will still be able to help you if you'll be available.
+
+664
+01:03:43.250 --> 01:03:48.963
+Bob Jones: Yeah. And thank you first of all, pardon me for being ignorant about where you're located. First of all, just cause I'll be very happy to. But secondly, just because this is a short duration. There's no problem with me taking an earlier call. If that gives you more breathing room. If you want to talk at 7 am Eastern and that makes your life easier. That's great with me. It's no problem. So that's fine with me. But Amal is on the West coast? I think so. If Andrew Neighbor is the priority in terms of this particular piece (Booking Data Dashboard), the Booking Data Dashboard. Then I would say, as soon as it's convenient for him. I'd like to get that done before the end of the day tomorrow, Tuesday, July 16, 2024.
+
+668
+01:04:31.617 --> 01:04:36.210
+Franklin Dorsey: I will try to get him on a call tomorrow and we will get together. We will meet each other, and you will be able to reach out to him at any time, and you will be able to agree anytime to work with him, because I'm not going to be needed for all the sessions. Okay, will be more interested. And looking at the visualizations, and we'll be able to provide a lot more information about the booking data and requirements for the visualizations. How he would want to see the slideshow source. Also how to say it. Or if he was using a specific word, like Storytelling. Exactly. So. He would want to have this kind of Storytelling possibility with couple of dashboards that will be going from a high level details to lower level details with some with some dig ins into the details for particular in visualization. So he will be able to explain all that.
+
+683
+01:05:43.800 --> 01:05:50.203
+Bob Jones: Okay, yeah, that's perfect. And then I'm glad we have a chance to confirm that. So you feel free to. Just if you want to move to the time that we spend, whether it's the daily touching base or meetings where we're getting more into detail, feel free to move those earlier. Okay, yeah, so yeah, just so, you know, let's okay. So that sounds great. So that's with them all for the Booking Data Dashboard. For the next issue, here is my plan for attempting to triage your issue with the Quiznos Analytics ServiceNow Data Connector: Once I hear from you, I'll know that I can go into the ETR Dashboard Application, replicate that error on my own and then decide whether I handle it or I pass that off and delegate that so that it can be done more efficiently. And I feel comfortable that we're on the same page in terms of that 3rd piece, the training piece. Alright, so say when we meet tomorrow morning I'll have that outline for how we want to accomplish, you know, how we want to spend the entire 80 billable hours allocated for this engagement. And I'll rely on you in terms of the, for instance, what we had looked at just a moment ago before, issues with data models, the circular reference and things. If that's something that specific, either we use it as a used case for best practices, or it's something that has to be resolved in Phase One or Phase Two of the engagement. We can go over that as soon as it's convenient for you as well.
+
+704
+01:07:25.090 --> 01:07:27.579
+Franklin Dorsey: Sounds great. I just sent you an invite for the 9:00 a.m. ET Daily Sync Zoom Meeting. I invited Andrew Neighbor to attend that call too. We'll discuss any details when Andrew Neighbor will be available to work with you on the details regarding the Booking Data Dashboard. We can start there.
+
+710
+01:07:43.880 --> 01:07:45.890
+Bob Jones: That's perfect, much appreciated.
+
+711
+01:07:46.170 --> 01:07:51.789
+Franklin Dorsey: And for tomorrow I'll be ready with the ETR Dashboard problems and the Quiznos Analytics ServiceNow Data Connector synchronization issues. So I'll send you the details about the issues with the Quiznos Analytics ServiceNow Data Connector, and you will be able to pass it over to someone else at Quiznos Analytics to resolve that specific issue.
+
+713
+01:07:58.220 --> 01:08:05.010
+Bob Jones: All right, that's terrific. Has anyone else from Quiznos Analytics assisted you with the Quiznos Analytics ServiceNow Data Connector issue? It sounds like, perhaps you had contacted Quiznos Analytics Support and created a Quiznos Analytics Support Ticket for assistance with the issue.
+
+714
+01:08:05.520 --> 01:08:11.599
+Franklin Dorsey: Yes, I can share with you the Quiznos Analytics Support Ticket Number that was raised by me.
+
+715
+01:08:11.750 --> 01:08:19.698
+Bob Jones: Yes, please, because, yeah, if you didn't get your problem solved, that's not how it's supposed to work. So yes, please do. And then we'll be ready to address it. We can at least go over tomorrow, and I'll let you know whether I'll do it or someone else will get it done.
+
+718
+01:08:31.630 --> 01:08:35.460
+Franklin Dorsey: Alright. Thank you. We are now ending this call.
