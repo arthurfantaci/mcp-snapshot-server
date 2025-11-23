@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "mcp-snapshot-server": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "/Users/arthurfantaci/Projects/pa_jama/mcp-snapshot-server",
+        "run",
+        "mcp-snapshot-server"
+      ],
+      "env": {
+        "LLM_ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY}"
+      }
+    }
+  }
+}
