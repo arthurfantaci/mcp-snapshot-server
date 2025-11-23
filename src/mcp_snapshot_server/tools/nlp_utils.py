@@ -33,14 +33,14 @@ def extract_entities(text: str) -> dict[str, list[str]]:
 
         try:
             nlp = spacy.load(model_name)
-        except OSError:
+        except OSError as err:
             # Model not found, try to provide helpful error
             raise MCPServerError(
                 message=f"spaCy model '{model_name}' not found. "
                 f"Please install it: python -m spacy download {model_name}",
                 error_code=ErrorCode.INTERNAL_ERROR,
                 details={"model": model_name},
-            )
+            ) from err
 
         # Process text
         doc = nlp(text)
@@ -58,10 +58,9 @@ def extract_entities(text: str) -> dict[str, list[str]]:
 
 
         for ent in doc.ents:
-            if ent.label_ in entities_by_type:
-                # Simple deduplication
-                if ent.text not in entities_by_type[ent.label_]:
-                    entities_by_type[ent.label_].append(ent.text)
+            # Simple deduplication
+            if ent.label_ in entities_by_type and ent.text not in entities_by_type[ent.label_]:
+                entities_by_type[ent.label_].append(ent.text)
 
         # Clean up empty categories
         entities_by_type = {k: v for k, v in entities_by_type.items() if v}
@@ -76,18 +75,18 @@ def extract_entities(text: str) -> dict[str, list[str]]:
 
         return entities_by_type
 
-    except ImportError:
+    except ImportError as err:
         raise MCPServerError(
             message="spaCy not installed. Install with: pip install spacy",
             error_code=ErrorCode.INTERNAL_ERROR,
             details={"missing_package": "spacy"},
-        )
+        ) from err
     except Exception as e:
         raise MCPServerError(
             message=f"Entity extraction failed: {str(e)}",
             error_code=ErrorCode.INTERNAL_ERROR,
             details={"error_type": type(e).__name__},
-        )
+        ) from e
 
 
 def extract_topics(text: str, top_n: int = 10) -> list[str]:
@@ -144,18 +143,18 @@ def extract_topics(text: str, top_n: int = 10) -> list[str]:
 
         return topics
 
-    except ImportError:
+    except ImportError as err:
         raise MCPServerError(
             message="NLTK not installed. Install with: pip install nltk",
             error_code=ErrorCode.INTERNAL_ERROR,
             details={"missing_package": "nltk"},
-        )
+        ) from err
     except Exception as e:
         raise MCPServerError(
             message=f"Topic extraction failed: {str(e)}",
             error_code=ErrorCode.INTERNAL_ERROR,
             details={"error_type": type(e).__name__},
-        )
+        ) from e
 
 
 def extract_key_phrases(text: str, top_n: int = 15) -> list[str]:
