@@ -211,7 +211,10 @@ class OrchestrationAgent(BaseAgent):
         self.logger.info("Starting transcript analysis")
 
         analysis_results = await self.analysis_agent.process(
-            {"transcript_data": transcript_data}
+            {
+                "transcript": transcript_data.get("text", ""),
+                "transcript_data": transcript_data
+            }
         )
 
         self.logger.info(
