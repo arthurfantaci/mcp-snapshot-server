@@ -515,13 +515,18 @@ Could you please provide this information?"""
             )
 
 
-async def main():
-    """Main entry point for the MCP server."""
+async def async_main():
+    """Async main function for the MCP server."""
     server = SnapshotMCPServer()
     await server.run()
 
 
-if __name__ == "__main__":
+def main():
+    """Synchronous entry point for the MCP server (called by script entry point)."""
     import asyncio
 
-    asyncio.run(main())
+    asyncio.run(async_main())
+
+
+if __name__ == "__main__":
+    main()

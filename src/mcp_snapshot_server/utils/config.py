@@ -12,7 +12,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class MCPServerSettings(BaseSettings):
     """Main MCP Server configuration."""
 
-    model_config = SettingsConfigDict(env_prefix="MCP_", env_file=".env")
+    model_config = SettingsConfigDict(
+        env_prefix="MCP_", env_file=".env", extra="ignore"
+    )
 
     # Server settings
     server_name: str = Field(default="snapshot-server", description="MCP server name")
@@ -29,7 +31,9 @@ class MCPServerSettings(BaseSettings):
 class LLMSettings(BaseSettings):
     """LLM/Claude configuration."""
 
-    model_config = SettingsConfigDict(env_prefix="LLM_", env_file=".env")
+    model_config = SettingsConfigDict(
+        env_prefix="LLM_", env_file=".env", extra="ignore"
+    )
 
     # API settings
     anthropic_api_key: str = Field(
@@ -71,7 +75,9 @@ class LLMSettings(BaseSettings):
 class WorkflowSettings(BaseSettings):
     """Snapshot generation workflow configuration."""
 
-    model_config = SettingsConfigDict(env_prefix="WORKFLOW_", env_file=".env")
+    model_config = SettingsConfigDict(
+        env_prefix="WORKFLOW_", env_file=".env", extra="ignore"
+    )
 
     # Generation settings
     parallel_section_generation: bool = Field(
@@ -123,7 +129,9 @@ class WorkflowSettings(BaseSettings):
 class NLPSettings(BaseSettings):
     """NLP processing configuration."""
 
-    model_config = SettingsConfigDict(env_prefix="NLP_", env_file=".env")
+    model_config = SettingsConfigDict(
+        env_prefix="NLP_", env_file=".env", extra="ignore"
+    )
 
     spacy_model: str = Field(
         default="en_core_web_sm", description="spaCy model for entity extraction"
