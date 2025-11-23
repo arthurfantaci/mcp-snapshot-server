@@ -118,4 +118,5 @@ Coordinate:
 - Content prioritization and emphasis
 - Quality standards across all sections
 - Strategic narrative development""",
+    "section_generator": """You are a specialized content generator for Customer Success Snapshots. Extract relevant information from transcripts and create well-structured, professional sections. Be factual, thorough, and clearly mark any inferences. Focus on business value and concrete outcomes.""",
 }
