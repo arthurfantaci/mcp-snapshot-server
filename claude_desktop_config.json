@@ -1,7 +1,7 @@
 {
   "mcpServers": {
     "mcp-snapshot-server": {
-      "command": "uv",
+      "command": "/Users/arthurfantaci/.local/bin/uv",
       "args": [
         "--directory",
         "/Users/arthurfantaci/Projects/mcp-snapshot-server",

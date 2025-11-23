@@ -31,6 +31,19 @@ def sample_vtt_path(fixtures_dir: Path) -> Path:
 
 
 @pytest.fixture
+def sample_vtt_content(sample_vtt_path: Path) -> str:
+    """Content of sample VTT file.
+
+    Args:
+        sample_vtt_path: Path to sample VTT file
+
+    Returns:
+        VTT file content as string
+    """
+    return sample_vtt_path.read_text()
+
+
+@pytest.fixture
 def test_jama_vtt_path(fixtures_dir: Path) -> Path:
     """Path to test_jama VTT file.
 
@@ -41,6 +54,19 @@ def test_jama_vtt_path(fixtures_dir: Path) -> Path:
         Path to test_jama VTT file
     """
     return fixtures_dir / "test_jama.vtt"
+
+
+@pytest.fixture
+def test_jama_vtt_content(test_jama_vtt_path: Path) -> str:
+    """Content of test_jama VTT file.
+
+    Args:
+        test_jama_vtt_path: Path to test_jama VTT file
+
+    Returns:
+        VTT file content as string
+    """
+    return test_jama_vtt_path.read_text()
 
 
 @pytest.fixture

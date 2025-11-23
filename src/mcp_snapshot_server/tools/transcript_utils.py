@@ -1,11 +1,13 @@
 """VTT transcript parsing and processing utilities.
 
-This module provides functions for parsing WebVTT transcript files,
+This module provides functions for parsing WebVTT transcript content,
 cleaning and normalizing transcript text, and extracting speaker information.
 """
 
+import io
 import logging
 import re
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -105,6 +107,151 @@ def clean_transcript_text(text: str) -> str:
     text = text.replace("'", "'").replace("'", "'")
 
     return text.strip()
+
+
+def parse_vtt_content(vtt_content: str, filename: str = "transcript.vtt") -> dict[str, Any]:
+    """Parse VTT transcript content string directly.
+
+    Args:
+        vtt_content: VTT transcript content as a string
+        filename: Optional filename for context in error messages and metadata
+
+    Returns:
+        Dictionary containing:
+            - text: Full transcript text with speaker labels
+            - speakers: List of unique speakers
+            - speaker_turns: List of individual speaking turns
+            - duration: Duration in seconds
+            - metadata: Additional metadata
+
+    Raises:
+        MCPServerError: If content cannot be parsed
+    """
+    logger.info(f"Parsing VTT content from {filename}")
+
+    # Validate that content is not empty
+    if not vtt_content or not vtt_content.strip():
+        raise MCPServerError(
+            message="VTT content is empty",
+            error_code=ErrorCode.INVALID_INPUT,
+            details={"filename": filename},
+        )
+
+    # Validate that content starts with WEBVTT header
+    if not vtt_content.strip().startswith("WEBVTT"):
+        raise MCPServerError(
+            message="Invalid VTT format: content must start with 'WEBVTT'",
+            error_code=ErrorCode.INVALID_INPUT,
+            details={"filename": filename, "first_line": vtt_content.split("\n")[0]},
+        )
+
+    try:
+        # Write content to a temporary file for webvtt library to parse
+        # The webvtt library requires a file path, so we use a temp file
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".vtt", delete=False) as temp_file:
+            temp_file.write(vtt_content)
+            temp_path = temp_file.name
+
+        try:
+            # Parse VTT file using webvtt library
+            vtt_data = webvtt.read(temp_path)
+
+            speakers = set()
+            speaker_turns = []
+            full_text_parts = []
+
+            for caption in vtt_data:
+                # Get raw text
+                raw_text = caption.text
+
+                # Clean text
+                clean_text = clean_transcript_text(raw_text)
+
+                # Extract speaker
+                speaker, content = extract_speaker_info(clean_text)
+
+                if speaker:
+                    speakers.add(speaker)
+                    speaker_turns.append(
+                        {
+                            "speaker": speaker,
+                            "text": content,
+                            "start": caption.start,
+                            "end": caption.end,
+                        }
+                    )
+                    full_text_parts.append(f"{speaker}: {content}")
+                else:
+                    # No speaker identified, just add content
+                    if content:
+                        speaker_turns.append(
+                            {
+                                "speaker": "Unknown",
+                                "text": content,
+                                "start": caption.start,
+                                "end": caption.end,
+                            }
+                        )
+                        full_text_parts.append(content)
+
+            # Calculate duration (last caption end time)
+            duration = 0.0
+            if vtt_data.captions:
+                last_caption = vtt_data.captions[-1]
+                # Parse end time (format: HH:MM:SS.mmm)
+                time_parts = last_caption.end.split(":")
+                hours = float(time_parts[0])
+                minutes = float(time_parts[1])
+                seconds = float(time_parts[2])
+                duration = hours * 3600 + minutes * 60 + seconds
+
+            # Combine full text
+            full_text = "\n".join(full_text_parts)
+
+            logger.info(
+                "Successfully parsed VTT content",
+                extra={
+                    "filename": filename,
+                    "speakers_count": len(speakers),
+                    "turns_count": len(speaker_turns),
+                    "duration_seconds": duration,
+                    "text_length": len(full_text),
+                },
+            )
+
+            return {
+                "text": full_text,
+                "speakers": sorted(speakers),
+                "speaker_turns": speaker_turns,
+                "duration": duration,
+                "metadata": {
+                    "filename": filename,
+                    "caption_count": len(vtt_data.captions),
+                    "speaker_count": len(speakers),
+                },
+            }
+
+        finally:
+            # Clean up temporary file
+            Path(temp_path).unlink(missing_ok=True)
+
+    except webvtt.errors.MalformedFileError as e:
+        raise MCPServerError(
+            message=f"Invalid VTT format: {str(e)}",
+            error_code=ErrorCode.PARSE_ERROR,
+            details={"filename": filename, "parse_error": str(e)},
+        ) from e
+
+    except MCPServerError:
+        # Re-raise our own errors
+        raise
+
+    except Exception as e:
+        raise MCPServerError(
+            message=f"Failed to parse VTT content: {str(e)}",
+            error_code=ErrorCode.INTERNAL_ERROR,
+            details={"filename": filename, "error_type": type(e).__name__},
+        ) from e
 
 
 def parse_vtt_transcript(file_path: str) -> dict[str, Any]:

@@ -8,6 +8,7 @@ from mcp_snapshot_server.tools.transcript_utils import (
     clean_transcript_text,
     extract_speaker_info,
     get_transcript_summary,
+    parse_vtt_content,
     parse_vtt_transcript,
     validate_vtt_file,
 )
@@ -162,6 +163,84 @@ class TestParseVTTTranscript:
         """Test parsing nonexistent file raises error."""
         with pytest.raises(MCPServerError):
             parse_vtt_transcript("/path/to/nonexistent.vtt")
+
+
+@pytest.mark.unit
+class TestParseVTTContent:
+    """Tests for VTT content parsing (content-based, not file-based)."""
+
+    def test_parse_sample_vtt_content(self, sample_vtt_content: str) -> None:
+        """Test parsing VTT content string."""
+        result = parse_vtt_content(sample_vtt_content, "sample.vtt")
+
+        assert "text" in result
+        assert "speakers" in result
+        assert "speaker_turns" in result
+        assert "duration" in result
+        assert "metadata" in result
+
+        # Check that we extracted speakers
+        assert len(result["speakers"]) > 0
+        assert "John Smith" in result["speakers"]
+
+        # Check that we have speaking turns
+        assert len(result["speaker_turns"]) > 0
+
+        # Check text is not empty
+        assert len(result["text"]) > 0
+
+    def test_parse_content_includes_metadata(self, sample_vtt_content: str) -> None:
+        """Test that parsing includes metadata with filename."""
+        result = parse_vtt_content(sample_vtt_content, "test.vtt")
+
+        metadata = result["metadata"]
+        assert "filename" in metadata
+        assert metadata["filename"] == "test.vtt"
+        assert "caption_count" in metadata
+        assert "speaker_count" in metadata
+
+    def test_parse_content_calculates_duration(self, sample_vtt_content: str) -> None:
+        """Test that duration is calculated from content."""
+        result = parse_vtt_content(sample_vtt_content)
+
+        assert result["duration"] > 0
+
+    def test_parse_empty_content_raises_error(self) -> None:
+        """Test parsing empty content raises error."""
+        with pytest.raises(MCPServerError) as exc_info:
+            parse_vtt_content("")
+
+        assert exc_info.value.error_code == ErrorCode.INVALID_INPUT
+        assert "empty" in str(exc_info.value.message).lower()
+
+    def test_parse_invalid_content_raises_error(self) -> None:
+        """Test parsing invalid VTT content raises error."""
+        invalid_content = "This is not a VTT file"
+
+        with pytest.raises(MCPServerError) as exc_info:
+            parse_vtt_content(invalid_content, "invalid.vtt")
+
+        assert exc_info.value.error_code == ErrorCode.INVALID_INPUT
+        assert "WEBVTT" in str(exc_info.value.message)
+
+    def test_parse_minimal_valid_vtt(self) -> None:
+        """Test parsing minimal valid VTT content."""
+        minimal_vtt = """WEBVTT
+
+00:00:00.000 --> 00:00:05.000
+Speaker 1: Hello, this is a test.
+
+00:00:05.000 --> 00:00:10.000
+Speaker 2: This is a response.
+"""
+
+        result = parse_vtt_content(minimal_vtt, "minimal.vtt")
+
+        assert len(result["speakers"]) == 2
+        assert "Speaker 1" in result["speakers"]
+        assert "Speaker 2" in result["speakers"]
+        assert len(result["speaker_turns"]) == 2
+        assert result["duration"] == 10.0
 
 
 @pytest.mark.unit

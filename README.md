@@ -116,8 +116,10 @@ uv run pytest tests/test_agents/ -v        # Agent tests
 3. **Use in conversation**:
 
 ```
-Generate a customer success snapshot from /path/to/meeting.vtt
+Read the VTT file at /path/to/meeting.vtt and generate a customer success snapshot from it
 ```
+
+**Note**: Claude Desktop will read the VTT file and pass the content to the MCP server. The server no longer accepts file paths directly due to file system isolation.
 
 See [CLAUDE_DESKTOP.md](CLAUDE_DESKTOP.md) for detailed integration guide.
 
@@ -125,22 +127,27 @@ See [CLAUDE_DESKTOP.md](CLAUDE_DESKTOP.md) for detailed integration guide.
 
 ```python
 from mcp_snapshot_server.server import SnapshotMCPServer
+from pathlib import Path
 
 # Initialize server
 server = SnapshotMCPServer()
 
-# Generate snapshot
+# Read VTT file content
+vtt_content = Path("/path/to/transcript.vtt").read_text()
+
+# Generate snapshot (pass content, not file path)
 result = await server._call_tool(
     "generate_customer_snapshot",
     {
-        "vtt_file_path": "/path/to/transcript.vtt",
+        "vtt_content": vtt_content,
+        "filename": "transcript.vtt",  # Optional, for context
         "output_format": "json"  # or "markdown"
     }
 )
 
 # Access specific section
 section = await server._read_resource(
-    "snapshot://meeting/section/executive_summary"
+    "snapshot://transcript/section/executive_summary"
 )
 
 # Get elicitation prompt for missing data
@@ -186,7 +193,7 @@ uv run python -m mcp_snapshot_server
 ### Workflow
 
 ```
-VTT File
+VTT Content (string)
   ↓
 Parse Transcript
   ↓

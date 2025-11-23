@@ -13,7 +13,7 @@ from mcp_snapshot_server.agents.section_generator import SectionGeneratorAgent
 from mcp_snapshot_server.agents.validator import ValidationAgent
 from mcp_snapshot_server.prompts.section_prompts import SECTION_PROMPTS
 from mcp_snapshot_server.prompts.system_prompts import SYSTEM_PROMPTS
-from mcp_snapshot_server.tools.transcript_utils import parse_vtt_transcript
+from mcp_snapshot_server.tools.transcript_utils import parse_vtt_content
 from mcp_snapshot_server.utils.config import get_settings
 from mcp_snapshot_server.utils.errors import ErrorCode, MCPServerError
 from mcp_snapshot_server.utils.logging_config import ContextLogger
@@ -85,11 +85,12 @@ class OrchestrationAgent(BaseAgent):
             )
 
     async def process(self, input_data: dict[str, Any]) -> dict[str, Any]:
-        """Generate complete Customer Success Snapshot from VTT transcript.
+        """Generate complete Customer Success Snapshot from VTT transcript content.
 
         Args:
             input_data: Dictionary containing:
-                - vtt_file_path: Path to VTT transcript file
+                - vtt_content: VTT transcript content as string
+                - filename: Optional filename for context (default: "transcript.vtt")
 
         Returns:
             Dictionary containing:
@@ -98,22 +99,24 @@ class OrchestrationAgent(BaseAgent):
                 - validation: Validation results
                 - missing_fields: Aggregated missing fields
         """
-        vtt_file_path = input_data.get("vtt_file_path")
-        if not vtt_file_path:
+        vtt_content = input_data.get("vtt_content")
+        filename = input_data.get("filename", "transcript.vtt")
+
+        if not vtt_content:
             raise MCPServerError(
                 error_code=ErrorCode.INVALID_INPUT,
-                message="vtt_file_path is required",
+                message="vtt_content is required",
                 details={"input_data": input_data},
             )
 
         self.logger.info(
             "Starting snapshot generation workflow",
-            extra={"vtt_file": vtt_file_path},
+            extra={"filename": filename, "content_length": len(vtt_content)},
         )
 
         try:
             # Step 1: Parse VTT transcript
-            transcript_data = self._parse_transcript(vtt_file_path)
+            transcript_data = self._parse_transcript(vtt_content, filename)
 
             # Step 2: Analyze transcript
             analysis_results = await self._analyze_transcript(transcript_data)
@@ -161,22 +164,23 @@ class OrchestrationAgent(BaseAgent):
             raise MCPServerError(
                 error_code=ErrorCode.INTERNAL_ERROR,
                 message=f"Failed to generate snapshot: {str(e)}",
-                details={"vtt_file": vtt_file_path, "error": str(e)},
+                details={"filename": filename, "error": str(e)},
             ) from e
 
-    def _parse_transcript(self, vtt_file_path: str) -> dict[str, Any]:
-        """Parse VTT transcript file.
+    def _parse_transcript(self, vtt_content: str, filename: str = "transcript.vtt") -> dict[str, Any]:
+        """Parse VTT transcript content.
 
         Args:
-            vtt_file_path: Path to VTT file
+            vtt_content: VTT transcript content as string
+            filename: Optional filename for context
 
         Returns:
             Parsed transcript data
         """
-        self.logger.info("Parsing VTT transcript", extra={"file": vtt_file_path})
+        self.logger.info("Parsing VTT transcript", extra={"filename": filename, "content_length": len(vtt_content)})
 
         try:
-            transcript_data = parse_vtt_transcript(vtt_file_path)
+            transcript_data = parse_vtt_content(vtt_content, filename)
             self.logger.info(
                 "Transcript parsed successfully",
                 extra={
@@ -189,8 +193,8 @@ class OrchestrationAgent(BaseAgent):
         except Exception as e:
             raise MCPServerError(
                 error_code=ErrorCode.PARSE_ERROR,
-                message=f"Failed to parse VTT file: {str(e)}",
-                details={"file": vtt_file_path},
+                message=f"Failed to parse VTT content: {str(e)}",
+                details={"filename": filename},
             ) from e
 
     async def _analyze_transcript(

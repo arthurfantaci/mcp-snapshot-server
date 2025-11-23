@@ -83,13 +83,18 @@ class SnapshotMCPServer:
         return [
             Tool(
                 name="generate_customer_snapshot",
-                description="Generate a comprehensive Customer Success Snapshot from a VTT transcript file",
+                description="Generate a comprehensive Customer Success Snapshot from VTT transcript content. Pass the VTT file content as a string.",
                 inputSchema={
                     "type": "object",
                     "properties": {
-                        "vtt_file_path": {
+                        "vtt_content": {
                             "type": "string",
-                            "description": "Path to the VTT transcript file",
+                            "description": "VTT transcript content as a string (must start with 'WEBVTT')",
+                        },
+                        "filename": {
+                            "type": "string",
+                            "description": "Optional filename for context (default: 'transcript.vtt')",
+                            "default": "transcript.vtt",
                         },
                         "output_format": {
                             "type": "string",
@@ -98,7 +103,7 @@ class SnapshotMCPServer:
                             "default": "json",
                         },
                     },
-                    "required": ["vtt_file_path"],
+                    "required": ["vtt_content"],
                 },
             )
         ]
@@ -128,25 +133,29 @@ class SnapshotMCPServer:
         """Generate customer success snapshot.
 
         Args:
-            arguments: Tool arguments including vtt_file_path and output_format
+            arguments: Tool arguments including vtt_content, filename (optional), and output_format
 
         Returns:
             Generated snapshot as TextContent
         """
-        vtt_file_path = arguments.get("vtt_file_path")
+        vtt_content = arguments.get("vtt_content")
+        filename = arguments.get("filename", "transcript.vtt")
         output_format = arguments.get("output_format", "json")
 
         self.logger.info(
             "Generating snapshot",
-            extra={"vtt_file": vtt_file_path, "format": output_format},
+            extra={"filename": filename, "format": output_format, "content_length": len(vtt_content) if vtt_content else 0},
         )
 
         try:
             # Generate snapshot using orchestrator
-            result = await self.orchestrator.process({"vtt_file_path": vtt_file_path})
+            result = await self.orchestrator.process({
+                "vtt_content": vtt_content,
+                "filename": filename
+            })
 
             # Store snapshot for later access via Resources
-            snapshot_id = Path(vtt_file_path).stem
+            snapshot_id = Path(filename).stem
             self.snapshots[snapshot_id] = result
 
             # Format output
@@ -179,7 +188,7 @@ class SnapshotMCPServer:
             raise MCPServerError(
                 error_code=ErrorCode.INTERNAL_ERROR,
                 message=f"Failed to generate snapshot: {str(e)}",
-                details={"vtt_file": vtt_file_path, "error": str(e)},
+                details={"filename": filename, "error": str(e)},
             ) from e
 
     def _format_as_markdown(self, snapshot: dict[str, Any]) -> str:

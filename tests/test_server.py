@@ -88,7 +88,9 @@ class TestToolsPrimitive:
         assert len(tools) == 1
         assert tools[0].name == "generate_customer_snapshot"
         assert "VTT transcript" in tools[0].description
-        assert "vtt_file_path" in tools[0].inputSchema["properties"]
+        assert "vtt_content" in tools[0].inputSchema["properties"]
+        assert "filename" in tools[0].inputSchema["properties"]
+        assert "vtt_content" in tools[0].inputSchema["required"]
 
     @pytest.mark.asyncio
     async def test_call_unknown_tool(self, mcp_server):
@@ -101,14 +103,14 @@ class TestToolsPrimitive:
 
     @pytest.mark.asyncio
     async def test_generate_snapshot_json(
-        self, mcp_server, mock_snapshot_result, test_env_vars
+        self, mcp_server, mock_snapshot_result, sample_vtt_content, test_env_vars
     ):
         """Test snapshot generation with JSON output."""
         # Mock orchestrator
         mcp_server.orchestrator.process = AsyncMock(return_value=mock_snapshot_result)
 
         result = await mcp_server._generate_snapshot(
-            {"vtt_file_path": "test.vtt", "output_format": "json"}
+            {"vtt_content": sample_vtt_content, "filename": "test.vtt", "output_format": "json"}
         )
 
         assert len(result) == 1
@@ -121,13 +123,13 @@ class TestToolsPrimitive:
 
     @pytest.mark.asyncio
     async def test_generate_snapshot_markdown(
-        self, mcp_server, mock_snapshot_result, test_env_vars
+        self, mcp_server, mock_snapshot_result, sample_vtt_content, test_env_vars
     ):
         """Test snapshot generation with Markdown output."""
         mcp_server.orchestrator.process = AsyncMock(return_value=mock_snapshot_result)
 
         result = await mcp_server._generate_snapshot(
-            {"vtt_file_path": "test.vtt", "output_format": "markdown"}
+            {"vtt_content": sample_vtt_content, "filename": "test.vtt", "output_format": "markdown"}
         )
 
         assert len(result) == 1
@@ -139,12 +141,12 @@ class TestToolsPrimitive:
         assert "Average Confidence" in result[0].text
 
     @pytest.mark.asyncio
-    async def test_generate_snapshot_error_handling(self, mcp_server):
+    async def test_generate_snapshot_error_handling(self, mcp_server, sample_vtt_content):
         """Test snapshot generation error handling."""
         mcp_server.orchestrator.process = AsyncMock(side_effect=Exception("Test error"))
 
         with pytest.raises(MCPServerError) as exc_info:
-            await mcp_server._generate_snapshot({"vtt_file_path": "test.vtt"})
+            await mcp_server._generate_snapshot({"vtt_content": sample_vtt_content, "filename": "test.vtt"})
 
         assert exc_info.value.error_code == ErrorCode.INTERNAL_ERROR
         assert "Failed to generate snapshot" in str(exc_info.value.message)
@@ -382,7 +384,7 @@ class TestIntegration:
     """Integration tests for MCP server."""
 
     @pytest.mark.asyncio
-    async def test_full_workflow(self, mcp_server, mock_snapshot_result, test_env_vars):
+    async def test_full_workflow(self, mcp_server, mock_snapshot_result, sample_vtt_content, test_env_vars):
         """Test complete workflow from tool call to resource access."""
         # Mock orchestrator
         mcp_server.orchestrator.process = AsyncMock(return_value=mock_snapshot_result)
@@ -390,7 +392,7 @@ class TestIntegration:
         # 1. Generate snapshot using tool
         result = await mcp_server._call_tool(
             "generate_customer_snapshot",
-            {"vtt_file_path": "integration_test.vtt", "output_format": "json"},
+            {"vtt_content": sample_vtt_content, "filename": "integration_test.vtt", "output_format": "json"},
         )
 
         assert len(result) == 1

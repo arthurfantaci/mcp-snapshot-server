@@ -90,33 +90,35 @@ class TestOrchestrationAgent:
         )
 
     @pytest.mark.asyncio
-    async def test_process_missing_vtt_path(self, orchestrator_agent):
-        """Test process fails without VTT file path."""
+    async def test_process_missing_vtt_content(self, orchestrator_agent):
+        """Test process fails without VTT content."""
         with pytest.raises(MCPServerError) as exc_info:
             await orchestrator_agent.process({})
 
         assert exc_info.value.error_code == ErrorCode.INVALID_INPUT
-        assert "vtt_file_path" in str(exc_info.value.message)
+        assert "vtt_content" in str(exc_info.value.message)
 
-    @patch("mcp_snapshot_server.agents.orchestrator.parse_vtt_transcript")
+    @patch("mcp_snapshot_server.agents.orchestrator.parse_vtt_content")
     def test_parse_transcript(
         self, mock_parse, orchestrator_agent, mock_transcript_data
     ):
-        """Test transcript parsing."""
+        """Test transcript content parsing."""
         mock_parse.return_value = mock_transcript_data
+        vtt_content = "WEBVTT\n\n00:00:00.000 --> 00:00:05.000\nTest content"
 
-        result = orchestrator_agent._parse_transcript("test.vtt")
+        result = orchestrator_agent._parse_transcript(vtt_content, "test.vtt")
 
         assert result == mock_transcript_data
-        mock_parse.assert_called_once_with("test.vtt")
+        mock_parse.assert_called_once_with(vtt_content, "test.vtt")
 
-    @patch("mcp_snapshot_server.agents.orchestrator.parse_vtt_transcript")
+    @patch("mcp_snapshot_server.agents.orchestrator.parse_vtt_content")
     def test_parse_transcript_error(self, mock_parse, orchestrator_agent):
         """Test transcript parsing error handling."""
-        mock_parse.side_effect = Exception("File not found")
+        mock_parse.side_effect = Exception("Invalid VTT format")
+        vtt_content = "Invalid content"
 
         with pytest.raises(MCPServerError) as exc_info:
-            orchestrator_agent._parse_transcript("nonexistent.vtt")
+            orchestrator_agent._parse_transcript(vtt_content, "invalid.vtt")
 
         assert exc_info.value.error_code == ErrorCode.PARSE_ERROR
 
@@ -369,13 +371,14 @@ class TestOrchestrationAgent:
         assert "location" in output["missing_fields"]
 
     @pytest.mark.asyncio
-    @patch("mcp_snapshot_server.agents.orchestrator.parse_vtt_transcript")
+    @patch("mcp_snapshot_server.agents.orchestrator.parse_vtt_content")
     async def test_full_workflow_integration(
         self,
         mock_parse,
         orchestrator_agent,
         mock_transcript_data,
         mock_analysis_results,
+        sample_vtt_content,
         test_env_vars,
     ):
         """Test complete workflow integration."""
@@ -429,7 +432,7 @@ class TestOrchestrationAgent:
             }
 
             # Run full workflow
-            result = await orchestrator_agent.process({"vtt_file_path": "test.vtt"})
+            result = await orchestrator_agent.process({"vtt_content": sample_vtt_content, "filename": "test.vtt"})
 
             # Verify output structure
             assert "sections" in result
