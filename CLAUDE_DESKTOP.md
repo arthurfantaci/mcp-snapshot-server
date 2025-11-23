@@ -30,7 +30,20 @@ The Claude Desktop configuration file is located at:
 ~/.config/Claude/claude_desktop_config.json
 ```
 
-### 2. Add MCP Server Configuration
+### 2. Find Your uv Installation Path
+
+Claude Desktop doesn't inherit your terminal's PATH, so you need to use the **full path** to `uv`.
+
+**Find your uv path:**
+```bash
+which uv
+```
+
+Common locations:
+- macOS/Linux: `/Users/yourname/.local/bin/uv` or `/home/yourname/.local/bin/uv`
+- Homebrew: `/opt/homebrew/bin/uv` or `/usr/local/bin/uv`
+
+### 3. Add MCP Server Configuration
 
 Open the configuration file and add the MCP Snapshot Server:
 
@@ -38,7 +51,7 @@ Open the configuration file and add the MCP Snapshot Server:
 {
   "mcpServers": {
     "mcp-snapshot-server": {
-      "command": "uv",
+      "command": "/Users/yourname/.local/bin/uv",
       "args": [
         "--directory",
         "/absolute/path/to/mcp-snapshot-server",
@@ -53,9 +66,11 @@ Open the configuration file and add the MCP Snapshot Server:
 }
 ```
 
-**Important:** Replace `/absolute/path/to/mcp-snapshot-server` with the actual absolute path to this project directory.
+**Important:**
+- Replace `/Users/yourname/.local/bin/uv` with your actual uv path from step 2
+- Replace `/absolute/path/to/mcp-snapshot-server` with the actual absolute path to this project directory
 
-### 3. Set Environment Variables
+### 4. Set Environment Variables
 
 You can either:
 
@@ -73,14 +88,14 @@ You can either:
 }
 ```
 
-### 4. Restart Claude Desktop
+### 5. Restart Claude Desktop
 
 After updating the configuration:
 1. Quit Claude Desktop completely
 2. Relaunch Claude Desktop
 3. The MCP server should automatically connect
 
-### 5. Verify Integration
+### 6. Verify Integration
 
 In Claude Desktop, you should see:
 - **Tool available:** `generate_customer_snapshot`
@@ -147,12 +162,45 @@ Claude can use the elicitation prompts to gather missing information.
 
 ## Troubleshooting
 
-### Server Not Connecting
+### Error: "spawn uv ENOENT" or Server Not Connecting
+
+This is the most common error and occurs when Claude Desktop cannot find the `uv` command.
+
+**Problem:** GUI applications like Claude Desktop don't inherit your terminal's PATH environment variable.
+
+**Solution:** Use the full path to `uv` in your config:
+
+1. **Find your uv path:**
+   ```bash
+   which uv
+   ```
+   Example output: `/Users/yourname/.local/bin/uv`
+
+2. **Update your config with the full path:**
+   ```json
+   {
+     "mcpServers": {
+       "mcp-snapshot-server": {
+         "command": "/Users/yourname/.local/bin/uv",  ← Use full path here
+         "args": ["--directory", "/path/to/project", "run", "mcp-snapshot-server"]
+       }
+     }
+   }
+   ```
+
+3. **Restart Claude Desktop** (Quit completely with Cmd+Q, then reopen)
+
+**Common uv locations:**
+- `~/.local/bin/uv` (standard installation)
+- `/opt/homebrew/bin/uv` (Homebrew on Apple Silicon)
+- `/usr/local/bin/uv` (Homebrew on Intel Mac)
+
+### Config Syntax Errors
 
 1. Check the config file syntax (must be valid JSON)
-2. Verify the absolute path is correct
-3. Ensure uv is in your PATH
-4. Check Claude Desktop logs
+2. Verify all paths use forward slashes, even on Windows
+3. Ensure no trailing commas in JSON
+4. Use a JSON validator if unsure
 
 ### API Key Issues
 
@@ -164,7 +212,38 @@ Claude can use the elicitation prompts to gather missing information.
 
 1. Ensure the project directory is readable
 2. Check file permissions on VTT files
-3. Verify uv has execute permissions
+3. Verify uv has execute permissions:
+   ```bash
+   ls -l $(which uv)
+   # Should show: -rwxr-xr-x (executable)
+   ```
+
+### Viewing Claude Desktop Logs
+
+To see detailed error messages:
+
+**macOS:**
+```bash
+# View logs in real-time
+tail -f ~/Library/Logs/Claude/mcp*.log
+
+# Or check Console.app
+# Open Console.app → Search for "Claude" or "MCP"
+```
+
+**Windows:**
+```powershell
+# Check logs in:
+%APPDATA%\Claude\logs\
+```
+
+**Linux:**
+```bash
+# Check logs in:
+~/.config/Claude/logs/
+```
+
+Look for error messages containing "ENOENT", "spawn", or "mcp-snapshot-server".
 
 ### Debug Mode
 
@@ -208,7 +287,7 @@ Full example with all options:
 {
   "mcpServers": {
     "mcp-snapshot-server": {
-      "command": "uv",
+      "command": "/Users/you/.local/bin/uv",
       "args": [
         "--directory",
         "/Users/you/projects/mcp-snapshot-server",

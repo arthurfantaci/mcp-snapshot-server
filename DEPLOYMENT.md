@@ -126,12 +126,13 @@ nlp:
 See [CLAUDE_DESKTOP.md](CLAUDE_DESKTOP.md) for detailed instructions.
 
 **Quick Setup:**
-1. Add to `claude_desktop_config.json`:
+1. Find your uv path: `which uv`
+2. Add to `claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
     "mcp-snapshot-server": {
-      "command": "uv",
+      "command": "/Users/yourname/.local/bin/uv",
       "args": [
         "--directory",
         "/path/to/mcp-snapshot-server",
@@ -146,7 +147,9 @@ See [CLAUDE_DESKTOP.md](CLAUDE_DESKTOP.md) for detailed instructions.
 }
 ```
 
-2. Restart Claude Desktop
+**Important:** Use the full path to `uv` (not just "uv") - Claude Desktop doesn't inherit your terminal's PATH.
+
+3. Restart Claude Desktop
 
 ### Option 2: Standalone Server
 
@@ -348,6 +351,36 @@ echo "Backup complete: $BACKUP_DIR.tar.gz"
 ```
 
 ### Troubleshooting
+
+**Claude Desktop: "spawn uv ENOENT" Error:**
+
+This is the most common error when setting up with Claude Desktop.
+
+**Cause:** Claude Desktop cannot find the `uv` command because GUI apps don't inherit your terminal's PATH.
+
+**Solution:**
+```bash
+# 1. Find your uv installation path
+which uv
+# Example output: /Users/yourname/.local/bin/uv
+
+# 2. Update claude_desktop_config.json with the FULL path:
+{
+  "mcpServers": {
+    "mcp-snapshot-server": {
+      "command": "/Users/yourname/.local/bin/uv",  ← Use full path
+      ...
+    }
+  }
+}
+
+# 3. Restart Claude Desktop completely (Cmd+Q then reopen)
+```
+
+Common uv locations:
+- `~/.local/bin/uv` (standard installation)
+- `/opt/homebrew/bin/uv` (Homebrew on Apple Silicon)
+- `/usr/local/bin/uv` (Homebrew on Intel Mac)
 
 **Server Won't Start:**
 ```bash

@@ -83,13 +83,18 @@ uv run pytest tests/test_agents/ -v        # Agent tests
 
 ### With Claude Desktop
 
-1. **Add to Claude Desktop config** (`~/Library/Application Support/Claude/claude_desktop_config.json`):
+1. **Find your uv installation path** (Claude Desktop needs the full path):
+   ```bash
+   which uv
+   ```
+
+2. **Add to Claude Desktop config** (`~/Library/Application Support/Claude/claude_desktop_config.json`):
 
 ```json
 {
   "mcpServers": {
     "mcp-snapshot-server": {
-      "command": "uv",
+      "command": "/Users/yourname/.local/bin/uv",
       "args": [
         "--directory",
         "/absolute/path/to/mcp-snapshot-server",
@@ -104,7 +109,9 @@ uv run pytest tests/test_agents/ -v        # Agent tests
 }
 ```
 
-2. **Restart Claude Desktop**
+   **Important:** Replace `/Users/yourname/.local/bin/uv` with the output from step 1.
+
+3. **Restart Claude Desktop**
 
 3. **Use in conversation**:
 
@@ -385,6 +392,21 @@ Contributions welcome! Please:
 - Add type hints (mypy enforces this)
 
 ## Troubleshooting
+
+### Claude Desktop: "spawn uv ENOENT" Error
+
+This is the most common installation issue. Claude Desktop cannot find the `uv` command.
+
+**Solution:** Use the full path to `uv` in your config:
+```bash
+# 1. Find uv path
+which uv
+
+# 2. Update claude_desktop_config.json with the full path:
+# "command": "/Users/yourname/.local/bin/uv"  ← Use your actual path
+```
+
+See [CLAUDE_DESKTOP.md](CLAUDE_DESKTOP.md#troubleshooting) for detailed troubleshooting.
 
 ### Server Won't Start
 

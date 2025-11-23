@@ -4,7 +4,7 @@
       "command": "uv",
       "args": [
         "--directory",
-        "/Users/arthurfantaci/Projects/pa_jama/mcp-snapshot-server",
+        "/Users/arthurfantaci/Projects/mcp-snapshot-server",
         "run",
         "mcp-snapshot-server"
       ],
