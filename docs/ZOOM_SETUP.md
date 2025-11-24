@@ -84,8 +84,12 @@ Add the following scopes one at a time:
 |-------|-------------|-----------------|
 | `recording:read:admin` | View all user recordings | Required to access meeting recordings |
 | `cloud_recording:read:list_user_recordings:admin` | List user recordings | Required to list recordings by date |
+| `cloud_recording:read:list_recording_files:admin` | View recording files | **Required to download transcript files** |
+| `cloud_recording:read:list_recording_files` | View recording files | **Required to access individual recording files** |
 | `user:read:user:admin` | Read user information | Required for user context |
 | `user:read:list_users:admin` | List users | Required for multi-user support |
+
+⚠️ **IMPORTANT**: The two `cloud_recording:read:list_recording_files` scopes are **critical** for downloading transcripts. Without these, you'll get a "Missing required scopes" error when attempting to download.
 
 ### Step 3: Save Scopes
 
@@ -252,15 +256,38 @@ generate_snapshot_from_zoom(meeting_id="123456789", output_format="markdown")
 - Wait and try again later (transcripts typically process within 2x meeting duration)
 - Check the recording in Zoom web interface to see processing status
 
+### Error: "Missing required scopes" (HTTP 400)
+
+**Problem**: Your OAuth app doesn't have the necessary permissions to access recording files.
+
+**Error Details**:
+```
+Zoom API error 400 (code: 124): Access token does not contain scopes:
+[cloud_recording:read:list_recording_files, cloud_recording:read:list_recording_files:admin]
+```
+
+**Solution**:
+1. Go to [Zoom Marketplace](https://marketplace.zoom.us/)
+2. Navigate to **Develop** → **Build App** → select your app
+3. Click on the **Scopes** tab
+4. Add the missing scopes:
+   - `cloud_recording:read:list_recording_files`
+   - `cloud_recording:read:list_recording_files:admin`
+5. Click **Done** and **Continue**
+6. In the **Activation** tab, ensure the app is still **Activated**
+7. **IMPORTANT**: You may need to **deactivate** and **reactivate** the app for scope changes to take effect
+8. Restart your MCP server and try again
+
 ### Error: "Forbidden" or "401 Unauthorized"
 
 **Problem**: Insufficient permissions or invalid authentication.
 
 **Solution**:
-1. Verify all required scopes are added to your app
+1. Verify all required scopes are added to your app (see table above)
 2. Check that your app is activated
 3. Regenerate your Client Secret and update `.env`
 4. Verify your Zoom account has permission to access recordings
+5. Try deactivating and reactivating the app to refresh permissions
 
 ### Recordings List is Empty
 

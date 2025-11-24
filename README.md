@@ -48,6 +48,7 @@ Transform Zoom meeting transcripts into professional, 11-section Customer Succes
 - **uv** package manager ([install](https://docs.astral.sh/uv/))
 - **Anthropic API key** with Claude access
 - **Zoom OAuth credentials** (Account ID, Client ID, Client Secret) - See [docs/ZOOM_SETUP.md](docs/ZOOM_SETUP.md)
+  - ⚠️ **Important**: Your Zoom app must have the `cloud_recording:read:list_recording_files` scopes enabled
 
 ### Installation
 
