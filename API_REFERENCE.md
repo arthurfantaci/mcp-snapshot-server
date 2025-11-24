@@ -14,27 +14,90 @@ Complete API reference for the MCP Snapshot Server.
 
 The server implements all 6 Model Context Protocol primitives:
 
-1. **Tools** - Execute snapshot generation
-2. **Resources** - Access generated snapshots and definitions
-3. **Prompts** - Get section and elicitation prompts
-4. **Sampling** - LLM integration (internal)
-5. **Elicitation** - Collect missing information
-6. **Logging** - Structured logging (internal)
+1. **Tools** - 4 tools for Zoom integration and snapshot generation
+2. **Resources** - Transcripts, snapshots, sections, and field definitions
+3. **Prompts** - 11 section prompts + field elicitation prompts
+4. **Sampling** - Claude AI integration with retry logic and confidence scoring
+5. **Elicitation** - Interactive collection of missing field information
+6. **Logging** - Structured JSON logging with full traceability
 
 ## Tools
 
-### generate_customer_snapshot
+### list_zoom_recordings
 
-Generate a complete Customer Success Snapshot from a VTT transcript file.
+List Zoom cloud recordings with available transcripts.
 
 **Input Schema:**
 ```json
 {
   "type": "object",
   "properties": {
-    "vtt_file_path": {
+    "from_date": {
       "type": "string",
-      "description": "Path to the VTT transcript file"
+      "description": "Start date (YYYY-MM-DD). Defaults to 30 days ago."
+    },
+    "to_date": {
+      "type": "string",
+      "description": "End date (YYYY-MM-DD). Defaults to today."
+    },
+    "search_query": {
+      "type": "string",
+      "description": "Search query to filter by topic/title (case-insensitive)."
+    },
+    "page_size": {
+      "type": "integer",
+      "description": "Number of recordings per page (max 300). Default: 30.",
+      "default": 30
+    }
+  }
+}
+```
+
+**Output:**
+Returns list of recordings with metadata (meeting ID, topic, date, duration, transcript availability).
+
+---
+
+### fetch_zoom_transcript
+
+Fetch and cache a VTT transcript from a Zoom meeting. Returns the transcript URI and full content immediately for analysis.
+
+**Input Schema:**
+```json
+{
+  "type": "object",
+  "properties": {
+    "meeting_id": {
+      "type": "string",
+      "description": "Zoom meeting ID (obtain from list_zoom_recordings)."
+    }
+  },
+  "required": ["meeting_id"]
+}
+```
+
+**Output:**
+Returns:
+- `uri`: transcript://abc123 (for future reference)
+- `metadata`: Meeting topic, speakers, duration, etc.
+- `transcript content`: Full text for immediate analysis
+
+The transcript is cached and exposed as an MCP Resource for querying.
+
+---
+
+### generate_customer_snapshot
+
+Generate a complete Customer Success Snapshot from a cached transcript URI.
+
+**Input Schema:**
+```json
+{
+  "type": "object",
+  "properties": {
+    "transcript_uri": {
+      "type": "string",
+      "description": "URI of cached transcript (e.g., 'transcript://abc123'). Obtain from fetch_zoom_transcript."
     },
     "output_format": {
       "type": "string",
@@ -43,7 +106,36 @@ Generate a complete Customer Success Snapshot from a VTT transcript file.
       "default": "json"
     }
   },
-  "required": ["vtt_file_path"]
+  "required": ["transcript_uri"]
+}
+```
+
+**Output:**
+Returns complete 11-section snapshot with metadata, validation results, and confidence scores.
+
+---
+
+### generate_snapshot_from_zoom
+
+Convenience tool that fetches a Zoom transcript and generates a snapshot in one step.
+
+**Input Schema:**
+```json
+{
+  "type": "object",
+  "properties": {
+    "meeting_id": {
+      "type": "string",
+      "description": "Zoom meeting ID (obtain from list_zoom_recordings)."
+    },
+    "output_format": {
+      "type": "string",
+      "enum": ["json", "markdown"],
+      "description": "Output format for the snapshot",
+      "default": "json"
+    }
+  },
+  "required": ["meeting_id"]
 }
 ```
 
@@ -77,29 +169,52 @@ Generate a complete Customer Success Snapshot from a VTT transcript file.
 }
 ```
 
-**Example Usage (via Claude Desktop):**
-```
-Generate a customer success snapshot from /path/to/meeting.vtt
-```
-
-**Example Direct Call:**
-```python
-result = await mcp_server._call_tool(
-    "generate_customer_snapshot",
-    {
-        "vtt_file_path": "/path/to/transcript.vtt",
-        "output_format": "json"
-    }
-)
-```
-
 ## Resources
 
-Resources provide access to generated snapshots, sections, and field definitions.
+Resources provide access to transcripts, generated snapshots, sections, and field definitions.
 
 ### Resource URIs
 
-#### 1. Snapshot Resource
+#### 1. Transcript Resource
+
+**URI:** `transcript://<transcript_id>`
+
+**Description:** Access cached Zoom meeting transcript with full text and metadata
+
+**Example:**
+```python
+content = await mcp_server._read_resource("transcript://abc123")
+```
+
+**Returns:** JSON string with:
+```json
+{
+  "uri": "transcript://abc123",
+  "transcript_id": "abc123",
+  "filename": "zoom_123456789.vtt",
+  "text": "Full transcript text with speaker labels...",
+  "speakers": ["John Smith", "Sarah Johnson"],
+  "source": "zoom",
+  "zoom_metadata": {
+    "meeting_id": "123456789",
+    "topic": "Customer Success Review",
+    "start_time": "2024-11-23T10:30:00Z",
+    "duration": 3600
+  },
+  "parsed_data": {
+    "speaker_turns": [...],
+    "duration": 3600,
+    "metadata": {...}
+  }
+}
+```
+
+**Usage:**
+Transcripts are automatically exposed as resources when fetched via `fetch_zoom_transcript`. Reference them directly in conversations for ad-hoc queries.
+
+---
+
+#### 2. Snapshot Resource
 
 **URI:** `snapshot://<snapshot_id>`
 

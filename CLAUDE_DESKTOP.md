@@ -98,48 +98,93 @@ After updating the configuration:
 ### 6. Verify Integration
 
 In Claude Desktop, you should see:
-- **Tool available:** `generate_customer_snapshot`
-- **Resources:** Field definitions and generated snapshots
-- **Prompts:** Section generation and elicitation prompts
+- **4 Tools available:** `list_zoom_recordings`, `fetch_zoom_transcript`, `generate_customer_snapshot`, `generate_snapshot_from_zoom`
+- **Resources:** Transcripts, snapshots, sections, and field definitions
+- **Prompts:** 11 section-specific prompts + field elicitation prompts
 
 ## Usage in Claude Desktop
 
-### Generating a Snapshot
+### Two Modes of Operation
+
+**Mode 1: Ad-Hoc Transcript Queries (Fast)**
 
 ```
-Can you generate a customer success snapshot from this VTT file:
-/path/to/transcript.vtt
+# List recent meetings
+List my Zoom recordings from the past week
+
+# Fetch a specific transcript
+Fetch transcript for meeting ID 123456789
+
+# Ask questions immediately
+What pain points were discussed in this meeting?
+Who were the key stakeholders?
+What were the main action items?
 ```
 
-Claude will use the `generate_customer_snapshot` tool to process the transcript.
-
-### Accessing Resources
+**Mode 2: Generate Full Snapshot (Comprehensive)**
 
 ```
-Show me the customer_information section from the snapshot
+# One-step: fetch and generate
+Generate a customer success snapshot from Zoom meeting 123456789
+
+# Two-step: fetch first, then generate
+1. Fetch transcript for meeting 123456789
+2. Generate a snapshot from transcript://abc123
 ```
 
-Claude can access sections via the Resources primitive.
+### Common Examples
 
-### Using Prompts
-
+**List and search Zoom recordings:**
 ```
-Help me collect the missing company_name field
+List my Zoom recordings with transcripts
+Search Zoom recordings containing "customer feedback"
+Show recordings from November 2024
 ```
 
-Claude can use the elicitation prompts to gather missing information.
+**Query transcripts directly:**
+```
+Fetch transcript from meeting 123456789
+What technical requirements were mentioned?
+Summarize the customer's main concerns
+Who was the decision maker in this conversation?
+```
+
+**Generate documentation:**
+```
+Generate a customer success snapshot from meeting 123456789
+Create a markdown snapshot from transcript://abc123
+```
+
+**Access specific sections:**
+```
+Show me the executive summary from the snapshot
+What's in the financial impact section?
+```
 
 ## Available Primitives
 
-### 1. Tools
-- **generate_customer_snapshot**: Generate complete snapshot from VTT file
-  - Input: `vtt_file_path`, `output_format` (json|markdown)
+### 1. Tools (4 Total)
+- **list_zoom_recordings**: List and search Zoom cloud recordings
+  - Input: `from_date`, `to_date`, `search_query`, `page_size`
+  - Output: List of recordings with metadata
+
+- **fetch_zoom_transcript**: Fetch and cache Zoom transcript
+  - Input: `meeting_id`
+  - Output: Full transcript text + URI for reference
+
+- **generate_customer_snapshot**: Generate from cached transcript
+  - Input: `transcript_uri`, `output_format`
+  - Output: Complete 11-section snapshot
+
+- **generate_snapshot_from_zoom**: One-step fetch and generate
+  - Input: `meeting_id`, `output_format`
   - Output: Complete 11-section snapshot
 
 ### 2. Resources
+- **transcript://<id>**: Cached Zoom transcript with full text and metadata
 - **snapshot://<id>**: Full snapshot data
 - **snapshot://<id>/section/<section>**: Individual section
-- **field://<field_name>**: Field definition
+- **field://<field_name>**: Field definition and examples
 
 ### 3. Prompts
 - **Section prompts**: customer_information_section, background_section, etc.

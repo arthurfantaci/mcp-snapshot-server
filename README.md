@@ -2,34 +2,67 @@
 
 A production-ready Model Context Protocol (MCP) server that generates comprehensive Customer Success Snapshots from Zoom meeting transcripts using Claude AI.
 
-[![Tests](https://img.shields.io/badge/tests-107%2F108%20passing-brightgreen)]()
+[![Tests](https://img.shields.io/badge/tests-111%20passing-brightgreen)]()
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)]()
 [![License](https://img.shields.io/badge/license-MIT-blue)]()
 
 ## Overview
 
-Transform Zoom meeting transcripts into professional, 11-section Customer Success Snapshots automatically. This MCP server integrates directly with Zoom's API to download transcripts, implements all 6 Model Context Protocol primitives, and uses a multi-agent architecture with Claude AI to extract, analyze, and generate high-quality customer success documentation.
+MCP Snapshot Server is a production-ready Model Context Protocol (MCP) server that transforms Zoom meeting transcripts into actionable customer success intelligence. It provides two powerful modes of operation:
 
-### All 6 MCP Primitives
+1. **Ad-Hoc Transcript Analysis** - Query Zoom transcripts directly for quick insights without generating full documentation
+2. **Comprehensive Documentation** - Generate professional 11-section Customer Success Snapshots automatically
 
-✅ **Tools** - 4 tools for Zoom integration and snapshot generation
-✅ **Resources** - Access snapshots, sections, and field definitions via URIs
-✅ **Prompts** - 11 section prompts + field elicitation prompts
+### What Makes This Unique
+
+**🎯 Instant Transcript Access**
+- Fetch Zoom transcripts and query them immediately in conversation
+- Ask questions like "What pain points were discussed?" or "Who were the key stakeholders?"
+- No need to generate full reports for simple questions—get answers in seconds
+
+**📋 Full Documentation When Needed**
+- Generate comprehensive 11-section snapshots for formal case studies
+- Multi-agent AI system ensures accuracy and completeness
+- Confidence scoring (0.0-1.0) for each section with quality validation
+- Auto-validation catches inconsistencies across sections
+
+**🔗 Seamless Zoom Integration**
+- Direct OAuth 2.0 integration with Zoom's API
+- List, search, and fetch transcripts without leaving your workflow
+- Smart caching (15-min TTL) minimizes API calls and speeds up access
+- Handles all authentication and error cases automatically
+
+**🏗️ Enterprise-Grade Architecture**
+- All 6 MCP primitives fully implemented (Tools, Resources, Prompts, Sampling, Elicitation, Logging)
+- 111 passing tests with comprehensive error handling
+- Hybrid NLP + AI approach: spaCy/NLTK for entity extraction, Claude for deep analysis
+- Structured JSON logging with full traceability for debugging and auditing
+
+### Why Users Choose This
+
+**For Customer Success Managers:**
+- Quickly review meeting transcripts to identify action items and concerns
+- Generate professional case studies for marketing and sales enablement
+- Track customer engagement patterns across multiple touchpoints
+
+**For Sales Teams:**
+- Extract key insights from discovery calls without manual note-taking
+- Identify decision-makers, pain points, and buying signals automatically
+- Create compelling customer stories backed by actual conversation data
+
+**For Product Teams:**
+- Analyze customer feedback patterns across many meetings
+- Identify common feature requests and pain points at scale
+- Generate data-driven insights from qualitative conversations
+
+### Technical Highlights
+
+✅ **Tools** - 4 specialized tools for Zoom integration and snapshot generation
+✅ **Resources** - Transcripts, snapshots, sections, and field definitions exposed as MCP Resources
+✅ **Prompts** - 11 section-specific prompts + field elicitation for completeness
 ✅ **Sampling** - Integrated Claude AI with retry logic and confidence scoring
 ✅ **Elicitation** - Interactive collection of missing field information
-✅ **Logging** - Structured JSON logging with full traceability
-
-### Key Features
-
-- **🔗 Zoom Integration**: Direct API integration to list, download, and process Zoom meeting transcripts
-- **📊 11-Section Snapshots**: Customer Info, Background, Solution, Engagement, Results, Adoption, Financial Impact, Long-Term Impact, Visuals, Commentary, Executive Summary
-- **🤖 Multi-Agent Architecture**: Orchestrator, Analyzer, 11 Section Generators, Validator working together
-- **🧠 Hybrid NLP + AI**: spaCy and NLTK for entity extraction, Claude for deep analysis
-- **✨ Confidence Scoring**: 0.0-1.0 confidence scores for each section with quality validation
-- **✅ Auto-Validation**: Cross-section consistency checking and quality assessment
-- **⚡ Smart Caching**: 15-minute TTL cache for Zoom recordings to minimize API calls
-- **🔒 Production-Ready**: 107 passing tests, comprehensive error handling, security best practices
-- **🚀 Modern Stack**: Built with uv, ruff, Pydantic V2, async/await, OAuth 2.0
+✅ **Logging** - Structured JSON logging with context and full traceability
 
 ## Table of Contents
 
@@ -230,65 +263,77 @@ uv run python -m mcp_snapshot_server
 
 ## Documentation
 
-### User Guides
-- **[docs/ZOOM_SETUP.md](docs/ZOOM_SETUP.md)** - ⭐ Zoom OAuth setup guide (required)
-- **[CLAUDE_DESKTOP.md](CLAUDE_DESKTOP.md)** - Claude Desktop integration guide
+### Essential Guides
+- **[docs/ZOOM_SETUP.md](docs/ZOOM_SETUP.md)** - ⭐ Zoom OAuth setup (required for Zoom integration)
+- **[CLAUDE_DESKTOP.md](CLAUDE_DESKTOP.md)** - Claude Desktop integration and configuration
 - **[DEPLOYMENT.md](DEPLOYMENT.md)** - Production deployment guide
-- **[SECURITY.md](SECURITY.md)** - Security considerations and best practices
-
-### Technical Documentation
-- **[API_REFERENCE.md](API_REFERENCE.md)** - Complete API reference
-- **[PROGRESS.md](PROGRESS.md)** - Development progress and architecture
-- **[SETUP.md](SETUP.md)** - Detailed development setup
-
-### Project Documentation (docs/)
-- **[MCP_Server_Project_Specification.md](docs/MCP_Server_Project_Specification.md)** - Original project specification
-- **[All_Prompt_Details.txt](docs/All_Prompt_Details.txt)** - Prompt engineering details
-- **[System_Prompt_Customer_Success_Snapshot.txt](docs/System_Prompt_Customer_Success_Snapshot.txt)** - Base system prompt
-- **[Quest_Enterprises_Kickoff_Transcript_Summary.md](docs/Quest_Enterprises_Kickoff_Transcript_Summary.md)** - Example transcript summary
+- **[SECURITY.md](SECURITY.md)** - Security best practices and considerations
+- **[API_REFERENCE.md](API_REFERENCE.md)** - Complete API reference and examples
 
 ## Architecture
 
-### Workflow
+### Two Usage Modes
 
+**Mode 1: Ad-Hoc Transcript Queries (Fast)**
 ```
 Zoom Meeting ID
   ↓
-Download VTT Transcript from Zoom API
+fetch_zoom_transcript → Fetch & cache transcript
+  ↓
+transcript://abc789 (Exposed as MCP Resource)
+  ↓
+Query directly: "What were the pain points discussed?"
+  ↓
+Claude analyzes transcript text → Instant answer
+```
+
+**Mode 2: Full Snapshot Generation (Comprehensive)**
+```
+Zoom Meeting ID
+  ↓
+fetch_zoom_transcript OR generate_snapshot_from_zoom
   ↓
 Cache Transcript (transcript://id)
   ↓
-Parse Transcript
+Parse Transcript → Extract structure, speakers, timing
   ↓
-Analysis Agent → Extract entities, topics, structure
+Analysis Agent → NLP entity extraction + topic identification
   ↓
-Section Generators (11 agents) → Generate specialized sections
+11 Section Generator Agents → Specialized content for each section
   ↓
-Validation Agent → Check consistency, quality
+Validation Agent → Cross-section consistency + quality checks
   ↓
-Executive Summary Generator → Synthesize overview
+Executive Summary Generator → Synthesize final overview
   ↓
-Final Snapshot (11 sections)
+Complete 11-Section Snapshot with confidence scores
 ```
 
-**Available Tools:**
-1. `list_zoom_recordings` - List recordings with transcripts
-2. `fetch_zoom_transcript` - Fetch & cache transcript (returns transcript URI)
-3. `generate_customer_snapshot` - Generate from cached transcript URI
-4. `generate_snapshot_from_zoom` - One-step fetch + generate
+### Available Tools
 
-**Querying Transcripts Directly:**
-Fetched transcripts are exposed as MCP Resources, allowing you to ask questions directly:
-```
-# Fetch transcript
-fetch_zoom_transcript meeting_id="123"
-→ Returns: transcript://abc789
+1. **`list_zoom_recordings`** - List and search Zoom recordings with transcripts
+2. **`fetch_zoom_transcript`** - Fetch & cache transcript (returns full text + URI)
+3. **`generate_customer_snapshot`** - Generate full snapshot from cached transcript URI
+4. **`generate_snapshot_from_zoom`** - One-step: fetch + generate full snapshot
 
-# Query it directly in conversation
-"What pain points were discussed in transcript://abc789?"
-"Who were the key stakeholders in that meeting?"
-"Summarize the technical requirements from transcript://abc789"
+### Transcript Querying (MCP Resources)
+
+Fetched transcripts are exposed as MCP Resources with full text content, allowing immediate analysis:
+
 ```
+# Fetch transcript (returns full content immediately)
+fetch_zoom_transcript meeting_id="123456789"
+→ Returns transcript://abc789 with full text
+
+# Ask questions directly - no snapshot generation needed
+"What pain points were discussed in this meeting?"
+"Who were the key stakeholders mentioned?"
+"Summarize the action items from this conversation"
+"What technical requirements were identified?"
+```
+
+The transcript content is available both:
+- **Immediately** in the tool response for instant access
+- **As an MCP Resource** for structured programmatic access
 
 ### Multi-Agent System
 
@@ -305,11 +350,12 @@ OrchestrationAgent
 - **Package Manager**: uv (10-100x faster than pip)
 - **Linting**: ruff (Rust-based, replaces black + isort + flake8)
 - **Type Checking**: mypy with strict mode
-- **Testing**: pytest with 98 tests
-- **LLM**: Anthropic Claude (3.5 Sonnet)
-- **NLP**: spaCy + NLTK
-- **Protocol**: Model Context Protocol (MCP)
-- **Config**: Pydantic V2
+- **Testing**: pytest with 111 passing tests
+- **LLM**: Anthropic Claude (Sonnet 4.5)
+- **NLP**: spaCy + NLTK for entity extraction
+- **API Integration**: Zoom OAuth 2.0 Server-to-Server
+- **Protocol**: Model Context Protocol (MCP) - All 6 primitives
+- **Validation**: Pydantic V2 for data validation and configuration
 
 ### The 11 Sections
 
