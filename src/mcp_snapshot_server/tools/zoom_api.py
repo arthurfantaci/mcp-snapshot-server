@@ -7,6 +7,7 @@ meeting recordings and transcripts using Server-to-Server OAuth authentication.
 import logging
 from datetime import datetime, timedelta
 from typing import Any
+from urllib.parse import quote
 
 import httpx
 from cachetools import TTLCache
@@ -317,7 +318,7 @@ async def get_meeting_recordings(
 
     Args:
         manager: ZoomAPIManager instance
-        meeting_id: Zoom meeting ID
+        meeting_id: Zoom meeting ID or UUID (will be URL-encoded)
 
     Returns:
         Dictionary with meeting recording details
@@ -328,8 +329,12 @@ async def get_meeting_recordings(
     logger.info("Fetching meeting recordings", extra={"meeting_id": meeting_id})
 
     try:
+        # URL-encode the meeting_id to handle UUIDs with special characters (+, =, /)
+        # Zoom requires double URL-encoding for UUIDs containing / or //
+        encoded_meeting_id = quote(quote(str(meeting_id), safe=''), safe='')
+
         # Make API request to get meeting recordings
-        endpoint = f"/meetings/{meeting_id}/recordings"
+        endpoint = f"/meetings/{encoded_meeting_id}/recordings"
 
         response = await manager.api_request(
             method="GET",
