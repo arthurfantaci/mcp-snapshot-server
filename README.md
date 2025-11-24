@@ -124,17 +124,42 @@ uv run pytest tests/test_agents/ -v        # Agent tests
 
 ### Basic Zoom Workflow
 
-The server provides a streamlined workflow for processing Zoom transcripts:
+The server provides two workflow options depending on your needs:
 
-```
-1. List available Zoom recordings
-   ↓
-2. Download a transcript from Zoom
-   ↓
-3. Generate Customer Success Snapshot
+```mermaid
+graph TD
+    A[List Zoom Recordings] -->|list_zoom_recordings| B[Select Meeting]
+    B --> C{What do you need?}
+
+    C -->|Quick Insights| D[Fetch Transcript]
+    D -->|fetch_zoom_transcript| E[transcript://abc123]
+    E --> F[Ask Questions Directly]
+    F --> G[Instant Answers]
+
+    C -->|Full Documentation| H[Generate Snapshot]
+    H -->|generate_snapshot_from_zoom| I[11-Section Snapshot]
+
+    C -->|Two-Step Process| J[Fetch First]
+    J -->|fetch_zoom_transcript| K[transcript://abc123]
+    K --> L[Generate Later]
+    L -->|generate_customer_snapshot| I
+
+    style D fill:#e1f5ff
+    style G fill:#c3f0c3
+    style H fill:#ffe1e1
+    style I fill:#ffd4d4
 ```
 
-Or use the one-step convenience tool to do steps 2-3 automatically!
+**Mode 1: Fast Insights** (Left Path)
+- Use when you need quick answers from a meeting
+- Fetch transcript → Ask questions → Get instant insights
+- Example: "What pain points were discussed?" "Who attended?"
+
+**Mode 2: Comprehensive Documentation** (Right Paths)
+- Use when you need formal case studies or detailed analysis
+- Option A: One-step with `generate_snapshot_from_zoom`
+- Option B: Two-step: fetch transcript, generate later
+- Produces complete 11-section Customer Success Snapshot
 
 ### With Claude Desktop
 
