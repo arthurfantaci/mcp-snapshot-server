@@ -1,6 +1,6 @@
 # MCP Snapshot Server
 
-A production-ready Model Context Protocol (MCP) server that generates comprehensive Customer Success Snapshots from Zoom meeting transcripts using Claude AI.
+An MCP server that transforms Zoom meeting transcripts into instant AI-powered insights or comprehensive Customer Success Snapshots—giving you fast answers or detailed documentation, seamlessly integrated with Claude Desktop.
 
 [![Tests](https://img.shields.io/badge/tests-111%20passing-brightgreen)]()
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)]()
