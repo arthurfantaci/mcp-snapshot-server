@@ -87,11 +87,17 @@ MCP Snapshot Server is a production-ready Model Context Protocol (MCP) server th
 >
 > You must create a **Server-to-Server OAuth app** on the [Zoom App Marketplace](https://marketplace.zoom.us/) to obtain the required credentials (Account ID, Client ID, and Client Secret).
 >
-> Your app must have these scopes enabled:
-> - `cloud_recording:read:list_recording_files:admin`
-> - `cloud_recording:read:list_recording_files`
+> **Required Scopes - Recording:**
+> - `recording:read:admin` - View all user recordings
+> - `cloud_recording:read:list_user_recordings:admin` - List user recordings
+> - `cloud_recording:read:list_recording_files:admin` - View recording files
+> - `cloud_recording:read:list_recording_files` - Access individual recording files
 >
-> 📖 See [docs/ZOOM_SETUP.md](docs/ZOOM_SETUP.md) for complete step-by-step instructions on creating your Zoom app and configuring the required scopes.
+> **Required Scopes - User:**
+> - `user:read:user:admin` - Read user information
+> - `user:read:list_users:admin` - List users
+>
+> 📖 See [docs/ZOOM_SETUP.md](docs/ZOOM_SETUP.md) for complete step-by-step instructions on creating your Zoom app and configuring all required scopes.
 
 ### Installation
 
