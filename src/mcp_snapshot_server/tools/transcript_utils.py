@@ -7,7 +7,6 @@ cleaning and normalizing transcript text, and extracting speaker information.
 import io
 import logging
 import re
-import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -146,94 +145,85 @@ def parse_vtt_content(vtt_content: str, filename: str = "transcript.vtt") -> dic
         )
 
     try:
-        # Write content to a temporary file for webvtt library to parse
-        # The webvtt library requires a file path, so we use a temp file
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".vtt", delete=False) as temp_file:
-            temp_file.write(vtt_content)
-            temp_path = temp_file.name
+        # Parse VTT content directly using StringIO buffer
+        # This avoids temporary file creation for better performance
+        buffer = io.StringIO(vtt_content)
+        vtt_data = webvtt.WebVTT.from_buffer(buffer)
 
-        try:
-            # Parse VTT file using webvtt library
-            vtt_data = webvtt.read(temp_path)
+        speakers = set()
+        speaker_turns = []
+        full_text_parts = []
 
-            speakers = set()
-            speaker_turns = []
-            full_text_parts = []
+        for caption in vtt_data:
+            # Get raw text
+            raw_text = caption.text
 
-            for caption in vtt_data:
-                # Get raw text
-                raw_text = caption.text
+            # Clean text
+            clean_text = clean_transcript_text(raw_text)
 
-                # Clean text
-                clean_text = clean_transcript_text(raw_text)
+            # Extract speaker
+            speaker, content = extract_speaker_info(clean_text)
 
-                # Extract speaker
-                speaker, content = extract_speaker_info(clean_text)
-
-                if speaker:
-                    speakers.add(speaker)
+            if speaker:
+                speakers.add(speaker)
+                speaker_turns.append(
+                    {
+                        "speaker": speaker,
+                        "text": content,
+                        "start": caption.start,
+                        "end": caption.end,
+                    }
+                )
+                full_text_parts.append(f"{speaker}: {content}")
+            else:
+                # No speaker identified, just add content
+                if content:
                     speaker_turns.append(
                         {
-                            "speaker": speaker,
+                            "speaker": "Unknown",
                             "text": content,
                             "start": caption.start,
                             "end": caption.end,
                         }
                     )
-                    full_text_parts.append(f"{speaker}: {content}")
-                else:
-                    # No speaker identified, just add content
-                    if content:
-                        speaker_turns.append(
-                            {
-                                "speaker": "Unknown",
-                                "text": content,
-                                "start": caption.start,
-                                "end": caption.end,
-                            }
-                        )
-                        full_text_parts.append(content)
+                    full_text_parts.append(content)
 
-            # Calculate duration (last caption end time)
-            duration = 0.0
-            if vtt_data.captions:
-                last_caption = vtt_data.captions[-1]
-                # Parse end time (format: HH:MM:SS.mmm)
-                time_parts = last_caption.end.split(":")
-                hours = float(time_parts[0])
-                minutes = float(time_parts[1])
-                seconds = float(time_parts[2])
-                duration = hours * 3600 + minutes * 60 + seconds
+        # Calculate duration (last caption end time)
+        duration = 0.0
+        if vtt_data.captions:
+            last_caption = vtt_data.captions[-1]
+            # Parse end time (format: HH:MM:SS.mmm)
+            time_parts = last_caption.end.split(":")
+            hours = float(time_parts[0])
+            minutes = float(time_parts[1])
+            seconds = float(time_parts[2])
+            duration = hours * 3600 + minutes * 60 + seconds
 
-            # Combine full text
-            full_text = "\n".join(full_text_parts)
+        # Combine full text
+        full_text = "\n".join(full_text_parts)
 
-            logger.info(
-                "Successfully parsed VTT content",
-                extra={
-                    "filename": filename,
-                    "speakers_count": len(speakers),
-                    "turns_count": len(speaker_turns),
-                    "duration_seconds": duration,
-                    "text_length": len(full_text),
-                },
-            )
+        logger.info(
+            "Successfully parsed VTT content",
+            extra={
+                "filename": filename,
+                "speakers_count": len(speakers),
+                "turns_count": len(speaker_turns),
+                "duration_seconds": duration,
+                "text_length": len(full_text),
+            },
+        )
 
-            return {
-                "text": full_text,
-                "speakers": sorted(speakers),
-                "speaker_turns": speaker_turns,
-                "duration": duration,
-                "metadata": {
-                    "filename": filename,
-                    "caption_count": len(vtt_data.captions),
-                    "speaker_count": len(speakers),
-                },
-            }
-
-        finally:
-            # Clean up temporary file
-            Path(temp_path).unlink(missing_ok=True)
+        return {
+            "text": full_text,
+            "speakers": sorted(speakers),
+            "speaker_turns": speaker_turns,
+            "duration": duration,
+            "metadata": {
+                "filename": filename,
+                "caption_count": len(vtt_data.captions),
+                "speaker_count": len(speakers),
+            },
+        }
 
     except webvtt.errors.MalformedFileError as e:
         raise MCPServerError(

@@ -153,6 +153,55 @@ class NLPSettings(BaseSettings):
     )
 
 
+class ZoomSettings(BaseSettings):
+    """Zoom API configuration for Server-to-Server OAuth."""
+
+    model_config = SettingsConfigDict(
+        env_prefix="ZOOM_", env_file=".env", extra="ignore"
+    )
+
+    # OAuth credentials
+    account_id: str = Field(
+        default="", description="Zoom account ID for Server-to-Server OAuth"
+    )
+
+    client_id: str = Field(
+        default="", description="Zoom OAuth client ID"
+    )
+
+    client_secret: str = Field(
+        default="", description="Zoom OAuth client secret"
+    )
+
+    # API settings
+    default_user_id: str = Field(
+        default="me", description="Default user ID for API calls (me = authenticated user)"
+    )
+
+    api_timeout: int = Field(
+        default=30, ge=10, le=120, description="API request timeout in seconds"
+    )
+
+    max_retries: int = Field(
+        default=3, ge=1, le=5, description="Maximum API retry attempts"
+    )
+
+    # Caching settings
+    cache_ttl_seconds: int = Field(
+        default=900,  # 15 minutes
+        ge=0,
+        le=3600,
+        description="Cache TTL for recordings list in seconds (0 = no cache)",
+    )
+
+    max_cache_size: int = Field(
+        default=100,
+        ge=10,
+        le=1000,
+        description="Maximum number of cached recordings list entries",
+    )
+
+
 class Settings:
     """Aggregated settings for the entire application."""
 
@@ -162,6 +211,7 @@ class Settings:
         self.llm = LLMSettings()
         self.workflow = WorkflowSettings()
         self.nlp = NLPSettings()
+        self.zoom = ZoomSettings()
 
     def validate(self) -> bool:
         """Validate all settings.
@@ -184,6 +234,20 @@ class Settings:
         ]
         if self.llm.model not in valid_models:
             raise ValueError(f"Invalid model. Must be one of: {valid_models}")
+
+        # Validate Zoom credentials (if any are provided, all must be provided)
+        zoom_creds_provided = any(
+            [self.zoom.account_id, self.zoom.client_id, self.zoom.client_secret]
+        )
+        zoom_creds_complete = all(
+            [self.zoom.account_id, self.zoom.client_id, self.zoom.client_secret]
+        )
+
+        if zoom_creds_provided and not zoom_creds_complete:
+            raise ValueError(
+                "Incomplete Zoom credentials. If configuring Zoom, you must provide "
+                "ZOOM_ACCOUNT_ID, ZOOM_CLIENT_ID, and ZOOM_CLIENT_SECRET"
+            )
 
         return True
 

@@ -85,12 +85,31 @@ class TestToolsPrimitive:
         """Test listing available tools."""
         tools = await mcp_server._list_tools()
 
-        assert len(tools) == 1
-        assert tools[0].name == "generate_customer_snapshot"
-        assert "VTT transcript" in tools[0].description
-        assert "vtt_content" in tools[0].inputSchema["properties"]
-        assert "filename" in tools[0].inputSchema["properties"]
-        assert "vtt_content" in tools[0].inputSchema["required"]
+        assert len(tools) == 4
+
+        # Check list_zoom_recordings tool
+        list_tool = next(t for t in tools if t.name == "list_zoom_recordings")
+        assert "zoom" in list_tool.description.lower()
+        assert "from_date" in list_tool.inputSchema["properties"]
+        assert "to_date" in list_tool.inputSchema["properties"]
+
+        # Check download_zoom_transcript tool
+        download_tool = next(t for t in tools if t.name == "download_zoom_transcript")
+        assert "download" in download_tool.description.lower()
+        assert "meeting_id" in download_tool.inputSchema["properties"]
+        assert "meeting_id" in download_tool.inputSchema["required"]
+
+        # Check generate_snapshot_from_zoom tool
+        zoom_snapshot_tool = next(t for t in tools if t.name == "generate_snapshot_from_zoom")
+        assert "zoom" in zoom_snapshot_tool.description.lower()
+        assert "meeting_id" in zoom_snapshot_tool.inputSchema["properties"]
+        assert "output_format" in zoom_snapshot_tool.inputSchema["properties"]
+
+        # Check generate_customer_snapshot tool
+        snapshot_tool = next(t for t in tools if t.name == "generate_customer_snapshot")
+        assert "transcript_uri" in snapshot_tool.inputSchema["properties"]
+        assert "transcript_uri" in snapshot_tool.inputSchema["required"]
+        assert "output_format" in snapshot_tool.inputSchema["properties"]
 
     @pytest.mark.asyncio
     async def test_call_unknown_tool(self, mcp_server):
@@ -105,12 +124,28 @@ class TestToolsPrimitive:
     async def test_generate_snapshot_json(
         self, mcp_server, mock_snapshot_result, sample_vtt_content, test_env_vars
     ):
-        """Test snapshot generation with JSON output."""
+        """Test snapshot generation with JSON output using transcript URI."""
         # Mock orchestrator
         mcp_server.orchestrator.process = AsyncMock(return_value=mock_snapshot_result)
 
+        # Manually cache a transcript first (simulating download_zoom_transcript)
+        from mcp_snapshot_server.tools.transcript_utils import parse_vtt_content
+
+        parsed_data = parse_vtt_content(sample_vtt_content, "test.vtt")
+        transcript_id = mcp_server._generate_transcript_id(sample_vtt_content)
+        transcript_uri = f"transcript://{transcript_id}"
+
+        mcp_server.transcripts[transcript_id] = {
+            "content": sample_vtt_content,
+            "filename": "test.vtt",
+            "parsed_data": parsed_data,
+            "uri": transcript_uri,
+            "source": "zoom",
+        }
+
+        # Generate snapshot using cached transcript
         result = await mcp_server._generate_snapshot(
-            {"vtt_content": sample_vtt_content, "filename": "test.vtt", "output_format": "json"}
+            {"transcript_uri": transcript_uri, "output_format": "json"}
         )
 
         assert len(result) == 1
@@ -125,11 +160,26 @@ class TestToolsPrimitive:
     async def test_generate_snapshot_markdown(
         self, mcp_server, mock_snapshot_result, sample_vtt_content, test_env_vars
     ):
-        """Test snapshot generation with Markdown output."""
+        """Test snapshot generation with Markdown output using transcript URI."""
         mcp_server.orchestrator.process = AsyncMock(return_value=mock_snapshot_result)
 
+        # Manually cache a transcript first
+        from mcp_snapshot_server.tools.transcript_utils import parse_vtt_content
+
+        parsed_data = parse_vtt_content(sample_vtt_content, "test.vtt")
+        transcript_id = mcp_server._generate_transcript_id(sample_vtt_content)
+        transcript_uri = f"transcript://{transcript_id}"
+
+        mcp_server.transcripts[transcript_id] = {
+            "content": sample_vtt_content,
+            "filename": "test.vtt",
+            "parsed_data": parsed_data,
+            "uri": transcript_uri,
+            "source": "zoom",
+        }
+
         result = await mcp_server._generate_snapshot(
-            {"vtt_content": sample_vtt_content, "filename": "test.vtt", "output_format": "markdown"}
+            {"transcript_uri": transcript_uri, "output_format": "markdown"}
         )
 
         assert len(result) == 1
@@ -142,14 +192,95 @@ class TestToolsPrimitive:
 
     @pytest.mark.asyncio
     async def test_generate_snapshot_error_handling(self, mcp_server, sample_vtt_content):
-        """Test snapshot generation error handling."""
+        """Test snapshot generation error handling with cached transcript."""
         mcp_server.orchestrator.process = AsyncMock(side_effect=Exception("Test error"))
 
+        # Manually cache a transcript first
+        from mcp_snapshot_server.tools.transcript_utils import parse_vtt_content
+
+        parsed_data = parse_vtt_content(sample_vtt_content, "test.vtt")
+        transcript_id = mcp_server._generate_transcript_id(sample_vtt_content)
+        transcript_uri = f"transcript://{transcript_id}"
+
+        mcp_server.transcripts[transcript_id] = {
+            "content": sample_vtt_content,
+            "filename": "test.vtt",
+            "parsed_data": parsed_data,
+            "uri": transcript_uri,
+            "source": "zoom",
+        }
+
         with pytest.raises(MCPServerError) as exc_info:
-            await mcp_server._generate_snapshot({"vtt_content": sample_vtt_content, "filename": "test.vtt"})
+            await mcp_server._generate_snapshot({"transcript_uri": transcript_uri})
 
         assert exc_info.value.error_code == ErrorCode.INTERNAL_ERROR
         assert "Failed to generate snapshot" in str(exc_info.value.message)
+
+    @pytest.mark.asyncio
+    async def test_generate_snapshot_with_uri(
+        self, mcp_server, mock_snapshot_result, sample_vtt_content, test_env_vars
+    ):
+        """Test generating snapshot using transcript URI (Zoom workflow)."""
+        # Manually cache a transcript (simulating download_zoom_transcript)
+        from mcp_snapshot_server.tools.transcript_utils import parse_vtt_content
+
+        parsed_data = parse_vtt_content(sample_vtt_content, "meeting.vtt")
+        transcript_id = mcp_server._generate_transcript_id(sample_vtt_content)
+        transcript_uri = f"transcript://{transcript_id}"
+
+        mcp_server.transcripts[transcript_id] = {
+            "content": sample_vtt_content,
+            "filename": "meeting.vtt",
+            "parsed_data": parsed_data,
+            "uri": transcript_uri,
+            "source": "zoom",
+        }
+
+        # Mock orchestrator
+        mcp_server.orchestrator.process = AsyncMock(return_value=mock_snapshot_result)
+
+        # Generate snapshot using URI
+        result = await mcp_server._generate_snapshot({
+            "transcript_uri": transcript_uri,
+            "output_format": "json"
+        })
+
+        assert len(result) == 1
+        assert "Customer Information" in result[0].text
+
+        # Verify orchestrator was called with content from cache
+        mcp_server.orchestrator.process.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_generate_snapshot_no_transcript_uri_error(self, mcp_server):
+        """Test error when transcript_uri is not provided."""
+        with pytest.raises(MCPServerError) as exc_info:
+            await mcp_server._generate_snapshot({})
+
+        assert exc_info.value.error_code == ErrorCode.INVALID_INPUT
+        assert "transcript_uri is required" in str(exc_info.value.message).lower()
+
+    @pytest.mark.asyncio
+    async def test_generate_snapshot_invalid_uri(self, mcp_server):
+        """Test error with invalid transcript URI."""
+        with pytest.raises(MCPServerError) as exc_info:
+            await mcp_server._generate_snapshot({
+                "transcript_uri": "invalid://abc123"
+            })
+
+        assert exc_info.value.error_code == ErrorCode.INVALID_INPUT
+        assert "Invalid transcript URI format" in str(exc_info.value.message)
+
+    @pytest.mark.asyncio
+    async def test_generate_snapshot_nonexistent_uri(self, mcp_server):
+        """Test error with nonexistent transcript URI."""
+        with pytest.raises(MCPServerError) as exc_info:
+            await mcp_server._generate_snapshot({
+                "transcript_uri": "transcript://nonexistent"
+            })
+
+        assert exc_info.value.error_code == ErrorCode.RESOURCE_NOT_FOUND
+        assert "Transcript not found" in str(exc_info.value.message)
 
     def test_format_as_markdown(self, mcp_server, mock_snapshot_result):
         """Test markdown formatting."""
@@ -385,20 +516,35 @@ class TestIntegration:
 
     @pytest.mark.asyncio
     async def test_full_workflow(self, mcp_server, mock_snapshot_result, sample_vtt_content, test_env_vars):
-        """Test complete workflow from tool call to resource access."""
+        """Test complete workflow from caching transcript to resource access."""
         # Mock orchestrator
         mcp_server.orchestrator.process = AsyncMock(return_value=mock_snapshot_result)
 
-        # 1. Generate snapshot using tool
+        # 1. Manually cache a transcript (simulating download_zoom_transcript)
+        from mcp_snapshot_server.tools.transcript_utils import parse_vtt_content
+
+        parsed_data = parse_vtt_content(sample_vtt_content, "integration_test.vtt")
+        transcript_id = mcp_server._generate_transcript_id(sample_vtt_content)
+        transcript_uri = f"transcript://{transcript_id}"
+
+        mcp_server.transcripts[transcript_id] = {
+            "content": sample_vtt_content,
+            "filename": "integration_test.vtt",
+            "parsed_data": parsed_data,
+            "uri": transcript_uri,
+            "source": "zoom",
+        }
+
+        # 2. Generate snapshot using cached transcript URI
         result = await mcp_server._call_tool(
             "generate_customer_snapshot",
-            {"vtt_content": sample_vtt_content, "filename": "integration_test.vtt", "output_format": "json"},
+            {"transcript_uri": transcript_uri, "output_format": "json"},
         )
 
         assert len(result) == 1
         assert "Customer Information" in result[0].text
 
-        # 2. List resources - should include the snapshot
+        # 3. List resources - should include the snapshot
         resources = await mcp_server._list_resources()
         snapshot_uris = [
             str(r.uri) for r in resources if "integration_test" in str(r.uri)

@@ -1,18 +1,18 @@
 # MCP Snapshot Server
 
-A production-ready Model Context Protocol (MCP) server that generates comprehensive Customer Success Snapshots from meeting transcripts using Claude AI.
+A production-ready Model Context Protocol (MCP) server that generates comprehensive Customer Success Snapshots from Zoom meeting transcripts using Claude AI.
 
-[![Tests](https://img.shields.io/badge/tests-98%2F98%20passing-brightgreen)]()
+[![Tests](https://img.shields.io/badge/tests-107%2F108%20passing-brightgreen)]()
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)]()
 [![License](https://img.shields.io/badge/license-MIT-blue)]()
 
 ## Overview
 
-Transform raw meeting transcripts into professional, 11-section Customer Success Snapshots automatically. This MCP server implements all 6 Model Context Protocol primitives and uses a multi-agent architecture with Claude AI to extract, analyze, and generate high-quality customer success documentation.
+Transform Zoom meeting transcripts into professional, 11-section Customer Success Snapshots automatically. This MCP server integrates directly with Zoom's API to download transcripts, implements all 6 Model Context Protocol primitives, and uses a multi-agent architecture with Claude AI to extract, analyze, and generate high-quality customer success documentation.
 
 ### All 6 MCP Primitives
 
-✅ **Tools** - `generate_customer_snapshot` tool for complete snapshot generation
+✅ **Tools** - 4 tools for Zoom integration and snapshot generation
 ✅ **Resources** - Access snapshots, sections, and field definitions via URIs
 ✅ **Prompts** - 11 section prompts + field elicitation prompts
 ✅ **Sampling** - Integrated Claude AI with retry logic and confidence scoring
@@ -21,13 +21,15 @@ Transform raw meeting transcripts into professional, 11-section Customer Success
 
 ### Key Features
 
-- **11-Section Snapshots**: Customer Info, Background, Solution, Engagement, Results, Adoption, Financial Impact, Long-Term Impact, Visuals, Commentary, Executive Summary
-- **Multi-Agent Architecture**: Orchestrator, Analyzer, 11 Section Generators, Validator working together
-- **Hybrid NLP + AI**: spaCy and NLTK for entity extraction, Claude for deep analysis
-- **Confidence Scoring**: 0.0-1.0 confidence scores for each section with quality validation
-- **Auto-Validation**: Cross-section consistency checking and quality assessment
-- **Production-Ready**: 98 passing tests, comprehensive error handling, security best practices
-- **Modern Stack**: Built with uv, ruff, Pydantic V2, async/await
+- **🔗 Zoom Integration**: Direct API integration to list, download, and process Zoom meeting transcripts
+- **📊 11-Section Snapshots**: Customer Info, Background, Solution, Engagement, Results, Adoption, Financial Impact, Long-Term Impact, Visuals, Commentary, Executive Summary
+- **🤖 Multi-Agent Architecture**: Orchestrator, Analyzer, 11 Section Generators, Validator working together
+- **🧠 Hybrid NLP + AI**: spaCy and NLTK for entity extraction, Claude for deep analysis
+- **✨ Confidence Scoring**: 0.0-1.0 confidence scores for each section with quality validation
+- **✅ Auto-Validation**: Cross-section consistency checking and quality assessment
+- **⚡ Smart Caching**: 15-minute TTL cache for Zoom recordings to minimize API calls
+- **🔒 Production-Ready**: 107 passing tests, comprehensive error handling, security best practices
+- **🚀 Modern Stack**: Built with uv, ruff, Pydantic V2, async/await, OAuth 2.0
 
 ## Table of Contents
 
@@ -45,6 +47,7 @@ Transform raw meeting transcripts into professional, 11-section Customer Success
 - **Python 3.10+** (3.11 or 3.12 recommended)
 - **uv** package manager ([install](https://docs.astral.sh/uv/))
 - **Anthropic API key** with Claude access
+- **Zoom OAuth credentials** (Account ID, Client ID, Client Secret) - See [docs/ZOOM_SETUP.md](docs/ZOOM_SETUP.md)
 
 ### Installation
 
@@ -63,15 +66,19 @@ uv sync --all-extras
 uv run python -m spacy download en_core_web_sm
 uv run python -c "import nltk; nltk.download('punkt'); nltk.download('stopwords')"
 
-# 5. Configure API key
+# 5. Configure credentials
 cp .env.example .env
-# Edit .env and add your Anthropic API key
+# Edit .env and add:
+#   - Your Anthropic API key (LLM_ANTHROPIC_API_KEY)
+#   - Your Zoom credentials (ZOOM_ACCOUNT_ID, ZOOM_CLIENT_ID, ZOOM_CLIENT_SECRET)
+#
+# See docs/ZOOM_SETUP.md for detailed Zoom setup instructions
 ```
 
 ### Run Tests
 
 ```bash
-# Run all tests (should see 98/98 passing)
+# Run all tests (should see 107/108 passing)
 uv run pytest tests/ -v
 
 # Run specific test suites
@@ -80,6 +87,20 @@ uv run pytest tests/test_agents/ -v        # Agent tests
 ```
 
 ## Usage Examples
+
+### Basic Zoom Workflow
+
+The server provides a streamlined workflow for processing Zoom transcripts:
+
+```
+1. List available Zoom recordings
+   ↓
+2. Download a transcript from Zoom
+   ↓
+3. Generate Customer Success Snapshot
+```
+
+Or use the one-step convenience tool to do steps 2-3 automatically!
 
 ### With Claude Desktop
 
@@ -102,7 +123,10 @@ uv run pytest tests/test_agents/ -v        # Agent tests
         "mcp-snapshot-server"
       ],
       "env": {
-        "LLM_ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY}"
+        "LLM_ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY}",
+        "ZOOM_ACCOUNT_ID": "${ZOOM_ACCOUNT_ID}",
+        "ZOOM_CLIENT_ID": "${ZOOM_CLIENT_ID}",
+        "ZOOM_CLIENT_SECRET": "${ZOOM_CLIENT_SECRET}"
       }
     }
   }
@@ -113,13 +137,18 @@ uv run pytest tests/test_agents/ -v        # Agent tests
 
 3. **Restart Claude Desktop**
 
-3. **Use in conversation**:
+4. **Use in conversation**:
 
 ```
-Read the VTT file at /path/to/meeting.vtt and generate a customer success snapshot from it
-```
+# List my recent Zoom recordings with transcripts
+list_zoom_recordings
 
-**Note**: Claude Desktop will read the VTT file and pass the content to the MCP server. The server no longer accepts file paths directly due to file system isolation.
+# Search for specific recordings
+list_zoom_recordings with topic containing "customer"
+
+# Download and generate snapshot in one step
+generate_snapshot_from_zoom for meeting ID 123456789
+```
 
 See [CLAUDE_DESKTOP.md](CLAUDE_DESKTOP.md) for detailed integration guide.
 
@@ -127,30 +156,50 @@ See [CLAUDE_DESKTOP.md](CLAUDE_DESKTOP.md) for detailed integration guide.
 
 ```python
 from mcp_snapshot_server.server import SnapshotMCPServer
-from pathlib import Path
 
 # Initialize server
 server = SnapshotMCPServer()
 
-# Read VTT file content
-vtt_content = Path("/path/to/transcript.vtt").read_text()
+# List Zoom recordings
+recordings = await server._call_tool(
+    "list_zoom_recordings",
+    {
+        "from_date": "2024-11-01",
+        "to_date": "2024-11-24",
+        "search_query": "customer"
+    }
+)
 
-# Generate snapshot (pass content, not file path)
+# Download specific transcript
+transcript = await server._call_tool(
+    "download_zoom_transcript",
+    {"meeting_id": "123456789"}
+)
+
+# Generate snapshot from cached transcript
 result = await server._call_tool(
     "generate_customer_snapshot",
     {
-        "vtt_content": vtt_content,
-        "filename": "transcript.vtt",  # Optional, for context
+        "transcript_uri": "transcript://abc123",  # From download step
         "output_format": "json"  # or "markdown"
     }
 )
 
-# Access specific section
-section = await server._read_resource(
-    "snapshot://transcript/section/executive_summary"
+# OR: One-step download + generate
+result = await server._call_tool(
+    "generate_snapshot_from_zoom",
+    {
+        "meeting_id": "123456789",
+        "output_format": "markdown"
+    }
 )
 
-# Get elicitation prompt for missing data
+# Access specific section via Resources
+section = await server._read_resource(
+    "snapshot://meeting/section/executive_summary"
+)
+
+# Get elicitation prompt for missing data via Prompts
 prompt = await server._get_prompt(
     "elicit_missing_field",
     {
@@ -173,6 +222,7 @@ uv run python -m mcp_snapshot_server
 ## Documentation
 
 ### User Guides
+- **[docs/ZOOM_SETUP.md](docs/ZOOM_SETUP.md)** - ⭐ Zoom OAuth setup guide (required)
 - **[CLAUDE_DESKTOP.md](CLAUDE_DESKTOP.md)** - Claude Desktop integration guide
 - **[DEPLOYMENT.md](DEPLOYMENT.md)** - Production deployment guide
 - **[SECURITY.md](SECURITY.md)** - Security considerations and best practices
@@ -193,7 +243,11 @@ uv run python -m mcp_snapshot_server
 ### Workflow
 
 ```
-VTT Content (string)
+Zoom Meeting ID
+  ↓
+Download VTT Transcript from Zoom API
+  ↓
+Cache Transcript (transcript://id)
   ↓
 Parse Transcript
   ↓
@@ -207,6 +261,12 @@ Executive Summary Generator → Synthesize overview
   ↓
 Final Snapshot (11 sections)
 ```
+
+**Available Tools:**
+1. `list_zoom_recordings` - List recordings with transcripts
+2. `download_zoom_transcript` - Download & cache transcript
+3. `generate_customer_snapshot` - Generate from cached transcript URI
+4. `generate_snapshot_from_zoom` - One-step download + generate
 
 ### Multi-Agent System
 

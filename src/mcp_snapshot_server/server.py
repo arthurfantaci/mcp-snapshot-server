@@ -1,7 +1,7 @@
 """MCP Server for Customer Success Snapshot Generation.
 
 This module implements the Model Context Protocol (MCP) server with all 6 primitives:
-- Tools: generate_customer_snapshot
+- Tools: generate_customer_snapshot, upload_transcript
 - Resources: transcript, snapshot, section, field URIs
 - Prompts: section generation prompts
 - Sampling: LLM integration for content generation
@@ -9,6 +9,7 @@ This module implements the Model Context Protocol (MCP) server with all 6 primit
 - Logging: Structured logging throughout
 """
 
+import hashlib
 import json
 from pathlib import Path
 from typing import Any
@@ -51,6 +52,10 @@ class SnapshotMCPServer:
         # Storage for generated snapshots (in-memory for now)
         self.snapshots: dict[str, dict[str, Any]] = {}
 
+        # Storage for uploaded transcripts (in-memory cache)
+        # Key: transcript_id (hash of content), Value: {content, filename, parsed_data}
+        self.transcripts: dict[str, dict[str, Any]] = {}
+
         # Register handlers
         self._register_handlers()
 
@@ -82,19 +87,54 @@ class SnapshotMCPServer:
         """
         return [
             Tool(
-                name="generate_customer_snapshot",
-                description="Generate a comprehensive Customer Success Snapshot from VTT transcript content. Pass the VTT file content as a string.",
+                name="list_zoom_recordings",
+                description="List Zoom cloud recordings with available transcripts. Requires Zoom API credentials to be configured (ZOOM_ACCOUNT_ID, ZOOM_CLIENT_ID, ZOOM_CLIENT_SECRET).",
                 inputSchema={
                     "type": "object",
                     "properties": {
-                        "vtt_content": {
+                        "from_date": {
                             "type": "string",
-                            "description": "VTT transcript content as a string (must start with 'WEBVTT')",
+                            "description": "Start date for recordings (YYYY-MM-DD format). Defaults to 30 days ago.",
                         },
-                        "filename": {
+                        "to_date": {
                             "type": "string",
-                            "description": "Optional filename for context (default: 'transcript.vtt')",
-                            "default": "transcript.vtt",
+                            "description": "End date for recordings (YYYY-MM-DD format). Defaults to today.",
+                        },
+                        "search_query": {
+                            "type": "string",
+                            "description": "Search query to filter recordings by topic/title (case-insensitive substring match).",
+                        },
+                        "page_size": {
+                            "type": "integer",
+                            "description": "Number of recordings to return per page (max 300). Default: 30.",
+                            "default": 30,
+                        },
+                    },
+                },
+            ),
+            Tool(
+                name="download_zoom_transcript",
+                description="Download a VTT transcript from a specific Zoom meeting. Returns a transcript URI that can be used with generate_customer_snapshot.",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "meeting_id": {
+                            "type": "string",
+                            "description": "Zoom meeting ID (obtain from list_zoom_recordings).",
+                        },
+                    },
+                    "required": ["meeting_id"],
+                },
+            ),
+            Tool(
+                name="generate_snapshot_from_zoom",
+                description="Download Zoom transcript and generate Customer Success Snapshot in a single step. Convenience tool that combines download_zoom_transcript and generate_customer_snapshot.",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "meeting_id": {
+                            "type": "string",
+                            "description": "Zoom meeting ID (obtain from list_zoom_recordings).",
                         },
                         "output_format": {
                             "type": "string",
@@ -103,9 +143,29 @@ class SnapshotMCPServer:
                             "default": "json",
                         },
                     },
-                    "required": ["vtt_content"],
+                    "required": ["meeting_id"],
                 },
-            )
+            ),
+            Tool(
+                name="generate_customer_snapshot",
+                description="Generate a comprehensive Customer Success Snapshot from a cached transcript URI. The transcript must first be downloaded from Zoom using download_zoom_transcript.",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "transcript_uri": {
+                            "type": "string",
+                            "description": "URI of a cached transcript (e.g., 'transcript://abc123'). Obtain this from download_zoom_transcript tool.",
+                        },
+                        "output_format": {
+                            "type": "string",
+                            "enum": ["json", "markdown"],
+                            "description": "Output format for the snapshot",
+                            "default": "json",
+                        },
+                    },
+                    "required": ["transcript_uri"],
+                },
+            ),
         ]
 
     async def _call_tool(
@@ -120,7 +180,13 @@ class SnapshotMCPServer:
         Returns:
             Tool execution results
         """
-        if name == "generate_customer_snapshot":
+        if name == "list_zoom_recordings":
+            return await self._list_zoom_recordings(arguments)
+        elif name == "download_zoom_transcript":
+            return await self._download_zoom_transcript(arguments)
+        elif name == "generate_snapshot_from_zoom":
+            return await self._generate_snapshot_from_zoom(arguments)
+        elif name == "generate_customer_snapshot":
             return await self._generate_snapshot(arguments)
         else:
             raise MCPServerError(
@@ -129,18 +195,69 @@ class SnapshotMCPServer:
                 details={"tool_name": name},
             )
 
-    async def _generate_snapshot(self, arguments: dict[str, Any]) -> list[TextContent]:
-        """Generate customer success snapshot.
+    def _generate_transcript_id(self, vtt_content: str) -> str:
+        """Generate a unique ID for transcript content.
 
         Args:
-            arguments: Tool arguments including vtt_content, filename (optional), and output_format
+            vtt_content: VTT content string
+
+        Returns:
+            Short hash-based ID
+        """
+        content_hash = hashlib.sha256(vtt_content.encode()).hexdigest()
+        return content_hash[:12]  # Use first 12 chars for readability
+
+    async def _generate_snapshot(self, arguments: dict[str, Any]) -> list[TextContent]:
+        """Generate customer success snapshot from cached transcript URI.
+
+        Args:
+            arguments: Tool arguments including transcript_uri (required) and output_format
 
         Returns:
             Generated snapshot as TextContent
         """
-        vtt_content = arguments.get("vtt_content")
-        filename = arguments.get("filename", "transcript.vtt")
+        transcript_uri = arguments.get("transcript_uri")
         output_format = arguments.get("output_format", "json")
+
+        # Validate transcript_uri is provided
+        if not transcript_uri:
+            raise MCPServerError(
+                error_code=ErrorCode.INVALID_INPUT,
+                message="transcript_uri is required",
+                details={"provided_args": list(arguments.keys())},
+            )
+
+        # Parse URI (format: transcript://abc123)
+        if not transcript_uri.startswith("transcript://"):
+            raise MCPServerError(
+                error_code=ErrorCode.INVALID_INPUT,
+                message=f"Invalid transcript URI format: {transcript_uri}",
+                details={"uri": transcript_uri, "expected_format": "transcript://<id>"},
+            )
+
+        transcript_id = transcript_uri.replace("transcript://", "")
+
+        # Retrieve from cache
+        if transcript_id not in self.transcripts:
+            raise MCPServerError(
+                error_code=ErrorCode.RESOURCE_NOT_FOUND,
+                message=f"Transcript not found: {transcript_uri}. Use download_zoom_transcript first.",
+                details={"uri": transcript_uri, "transcript_id": transcript_id},
+            )
+
+        # Retrieve cached transcript
+        cached = self.transcripts[transcript_id]
+        vtt_content = cached["content"]
+        filename = cached["filename"]
+
+        self.logger.info(
+            "Using cached transcript for snapshot generation",
+            extra={
+                "transcript_id": transcript_id,
+                "uri": transcript_uri,
+                "filename": filename,
+            },
+        )
 
         self.logger.info(
             "Generating snapshot",
@@ -189,6 +306,298 @@ class SnapshotMCPServer:
                 error_code=ErrorCode.INTERNAL_ERROR,
                 message=f"Failed to generate snapshot: {str(e)}",
                 details={"filename": filename, "error": str(e)},
+            ) from e
+
+    async def _list_zoom_recordings(self, arguments: dict[str, Any]) -> list[TextContent]:
+        """List Zoom cloud recordings with transcripts.
+
+        Args:
+            arguments: Tool arguments including date range and search query
+
+        Returns:
+            List of recordings with metadata
+        """
+        from mcp_snapshot_server.tools.zoom_api import (
+            ZoomAPIManager,
+            list_user_recordings,
+            search_recordings_by_topic,
+        )
+
+        from_date = arguments.get("from_date")
+        to_date = arguments.get("to_date")
+        search_query = arguments.get("search_query")
+        page_size = arguments.get("page_size", 30)
+
+        self.logger.info(
+            "Listing Zoom recordings",
+            extra={
+                "from_date": from_date,
+                "to_date": to_date,
+                "search_query": search_query,
+                "page_size": page_size,
+            },
+        )
+
+        try:
+            # Initialize Zoom manager
+            manager = ZoomAPIManager()
+
+            # List recordings
+            result = await list_user_recordings(
+                manager=manager,
+                from_date=from_date,
+                to_date=to_date,
+                page_size=page_size,
+                has_transcript=True,
+            )
+
+            meetings = result["meetings"]
+
+            # Apply search filter if provided
+            if search_query:
+                meetings = search_recordings_by_topic(meetings, search_query)
+
+            # Format response
+            recordings_list = []
+            for meeting in meetings:
+                recordings_list.append({
+                    "meeting_id": str(meeting.get("id")),
+                    "uuid": meeting.get("uuid"),
+                    "topic": meeting.get("topic"),
+                    "start_time": meeting.get("start_time"),
+                    "duration": meeting.get("duration"),
+                    "recording_count": meeting.get("recording_count"),
+                })
+
+            response_data = {
+                "recordings": recordings_list,
+                "total_count": len(recordings_list),
+                "from_date": result["from_date"],
+                "to_date": result["to_date"],
+                "search_query": search_query,
+            }
+
+            self.logger.info(
+                f"Found {len(recordings_list)} recordings with transcripts",
+                extra={"count": len(recordings_list)},
+            )
+
+            return [
+                TextContent(
+                    type="text",
+                    text=f"Found {len(recordings_list)} Zoom recordings with transcripts\n\n"
+                    + json.dumps(response_data, indent=2),
+                )
+            ]
+
+        except MCPServerError:
+            raise
+        except Exception as e:
+            self.logger.error(f"Failed to list Zoom recordings: {e}", extra={"error_type": type(e).__name__})
+            raise MCPServerError(
+                error_code=ErrorCode.ZOOM_API_ERROR,
+                message=f"Failed to list Zoom recordings: {str(e)}",
+                details={"error": str(e), "error_type": type(e).__name__},
+            ) from e
+
+    async def _download_zoom_transcript(self, arguments: dict[str, Any]) -> list[TextContent]:
+        """Download a Zoom transcript and cache it.
+
+        Args:
+            arguments: Tool arguments including meeting_id
+
+        Returns:
+            Transcript URI and metadata
+        """
+        from mcp_snapshot_server.tools.zoom_api import (
+            ZoomAPIManager,
+            download_transcript_content,
+            find_transcript_file,
+            get_meeting_recordings,
+        )
+        from mcp_snapshot_server.tools.transcript_utils import parse_vtt_content
+
+        meeting_id = arguments.get("meeting_id")
+
+        if not meeting_id:
+            raise MCPServerError(
+                error_code=ErrorCode.INVALID_INPUT,
+                message="meeting_id is required",
+                details={"provided_args": list(arguments.keys())},
+            )
+
+        self.logger.info(
+            "Downloading Zoom transcript",
+            extra={"meeting_id": meeting_id},
+        )
+
+        try:
+            # Initialize Zoom manager
+            manager = ZoomAPIManager()
+
+            # Get meeting recordings
+            meeting_data = await get_meeting_recordings(manager, meeting_id)
+
+            # Find transcript file
+            recording_files = meeting_data.get("recording_files", [])
+            transcript_file = find_transcript_file(recording_files)
+
+            if not transcript_file:
+                raise MCPServerError(
+                    error_code=ErrorCode.TRANSCRIPT_NOT_AVAILABLE,
+                    message=f"No VTT transcript found for meeting {meeting_id}. The meeting may not have a transcript, or it may still be processing.",
+                    details={"meeting_id": meeting_id, "recording_files_count": len(recording_files)},
+                )
+
+            # Check if transcript is still processing
+            if transcript_file.get("status") != "completed":
+                raise MCPServerError(
+                    error_code=ErrorCode.TRANSCRIPT_PROCESSING,
+                    message=f"Transcript is still processing for meeting {meeting_id}. Status: {transcript_file.get('status')}",
+                    details={"meeting_id": meeting_id, "status": transcript_file.get("status")},
+                )
+
+            # Download transcript content
+            download_url = transcript_file.get("download_url")
+
+            # Get fresh access token
+            access_token = await manager._get_access_token()
+
+            vtt_content = await download_transcript_content(
+                download_url=download_url,
+                access_token=access_token,
+                timeout=manager.settings.zoom.api_timeout,
+            )
+
+            # Parse and validate transcript
+            filename = f"zoom_{meeting_id}.vtt"
+            parsed_data = parse_vtt_content(vtt_content, filename)
+
+            # Generate unique ID and cache
+            transcript_id = self._generate_transcript_id(vtt_content)
+            transcript_uri = f"transcript://{transcript_id}"
+
+            # Store with Zoom metadata
+            self.transcripts[transcript_id] = {
+                "content": vtt_content,
+                "filename": filename,
+                "parsed_data": parsed_data,
+                "uri": transcript_uri,
+                "source": "zoom",
+                "zoom_metadata": {
+                    "meeting_id": meeting_id,
+                    "topic": meeting_data.get("topic"),
+                    "start_time": meeting_data.get("start_time"),
+                    "duration": meeting_data.get("duration"),
+                },
+            }
+
+            self.logger.info(
+                "Zoom transcript downloaded and cached",
+                extra={
+                    "meeting_id": meeting_id,
+                    "transcript_id": transcript_id,
+                    "uri": transcript_uri,
+                    "speakers": len(parsed_data.get("speakers", [])),
+                },
+            )
+
+            # Return response
+            response = {
+                "uri": transcript_uri,
+                "transcript_id": transcript_id,
+                "meeting_id": meeting_id,
+                "topic": meeting_data.get("topic"),
+                "filename": filename,
+                "speakers": parsed_data.get("speakers", []),
+                "duration": parsed_data.get("duration", 0),
+                "speaker_turns": len(parsed_data.get("speaker_turns", [])),
+            }
+
+            return [
+                TextContent(
+                    type="text",
+                    text=f"Zoom transcript downloaded successfully!\n\nURI: {transcript_uri}\n\n"
+                    + json.dumps(response, indent=2),
+                )
+            ]
+
+        except MCPServerError:
+            raise
+        except Exception as e:
+            self.logger.error(
+                f"Failed to download Zoom transcript: {e}",
+                extra={"meeting_id": meeting_id, "error_type": type(e).__name__},
+            )
+            raise MCPServerError(
+                error_code=ErrorCode.ZOOM_API_ERROR,
+                message=f"Failed to download Zoom transcript: {str(e)}",
+                details={"meeting_id": meeting_id, "error": str(e), "error_type": type(e).__name__},
+            ) from e
+
+    async def _generate_snapshot_from_zoom(self, arguments: dict[str, Any]) -> list[TextContent]:
+        """Download Zoom transcript and generate snapshot in one step.
+
+        Args:
+            arguments: Tool arguments including meeting_id and output_format
+
+        Returns:
+            Generated snapshot as TextContent
+        """
+        meeting_id = arguments.get("meeting_id")
+        output_format = arguments.get("output_format", "json")
+
+        if not meeting_id:
+            raise MCPServerError(
+                error_code=ErrorCode.INVALID_INPUT,
+                message="meeting_id is required",
+                details={"provided_args": list(arguments.keys())},
+            )
+
+        self.logger.info(
+            "Generating snapshot from Zoom meeting",
+            extra={"meeting_id": meeting_id, "output_format": output_format},
+        )
+
+        try:
+            # Step 1: Download transcript
+            download_result = await self._download_zoom_transcript({"meeting_id": meeting_id})
+
+            # Extract transcript_uri from the download result
+            # The result text contains JSON with the URI
+            result_text = download_result[0].text
+            # Parse the JSON part (after the success message)
+            json_start = result_text.find("{")
+            if json_start == -1:
+                raise ValueError("Could not parse download result")
+
+            download_data = json.loads(result_text[json_start:])
+            transcript_uri = download_data["uri"]
+
+            # Step 2: Generate snapshot
+            snapshot_result = await self._generate_snapshot({
+                "transcript_uri": transcript_uri,
+                "output_format": output_format,
+            })
+
+            self.logger.info(
+                "Snapshot generated from Zoom meeting successfully",
+                extra={"meeting_id": meeting_id, "transcript_uri": transcript_uri},
+            )
+
+            return snapshot_result
+
+        except MCPServerError:
+            raise
+        except Exception as e:
+            self.logger.error(
+                f"Failed to generate snapshot from Zoom: {e}",
+                extra={"meeting_id": meeting_id, "error_type": type(e).__name__},
+            )
+            raise MCPServerError(
+                error_code=ErrorCode.INTERNAL_ERROR,
+                message=f"Failed to generate snapshot from Zoom: {str(e)}",
+                details={"meeting_id": meeting_id, "error": str(e), "error_type": type(e).__name__},
             ) from e
 
     def _format_as_markdown(self, snapshot: dict[str, Any]) -> str:
@@ -242,6 +651,17 @@ class SnapshotMCPServer:
         """
         resources = []
 
+        # Add transcript resources
+        for transcript_id, transcript_data in self.transcripts.items():
+            resources.append(
+                Resource(
+                    uri=f"transcript://{transcript_id}",
+                    name=f"Transcript: {transcript_data['filename']}",
+                    description=f"Uploaded VTT transcript: {transcript_data['filename']}",
+                    mimeType="text/vtt",
+                )
+            )
+
         # Add snapshot resources
         for snapshot_id in self.snapshots:
             resources.append(
@@ -294,7 +714,9 @@ class SnapshotMCPServer:
         self.logger.info("Reading resource", extra={"uri": uri})
 
         # Parse URI
-        if uri.startswith("snapshot://"):
+        if uri.startswith("transcript://"):
+            return await self._read_transcript_resource(uri)
+        elif uri.startswith("snapshot://"):
             return await self._read_snapshot_resource(uri)
         elif uri.startswith("field://"):
             return await self._read_field_resource(uri)
@@ -304,6 +726,36 @@ class SnapshotMCPServer:
                 message=f"Unknown resource URI scheme: {uri}",
                 details={"uri": uri},
             )
+
+    async def _read_transcript_resource(self, uri: str) -> str:
+        """Read transcript resource.
+
+        Args:
+            uri: Transcript URI (transcript://<id>)
+
+        Returns:
+            Resource content as JSON string with metadata and parsed data
+        """
+        transcript_id = uri.replace("transcript://", "")
+
+        if transcript_id not in self.transcripts:
+            raise MCPServerError(
+                error_code=ErrorCode.RESOURCE_NOT_FOUND,
+                message=f"Transcript not found: {transcript_id}",
+                details={"transcript_id": transcript_id},
+            )
+
+        transcript_data = self.transcripts[transcript_id]
+
+        # Return metadata and parsed content (not raw VTT to save bandwidth)
+        response = {
+            "uri": uri,
+            "transcript_id": transcript_id,
+            "filename": transcript_data["filename"],
+            "parsed_data": transcript_data["parsed_data"],
+        }
+
+        return json.dumps(response, indent=2)
 
     async def _read_snapshot_resource(self, uri: str) -> str:
         """Read snapshot resource.
