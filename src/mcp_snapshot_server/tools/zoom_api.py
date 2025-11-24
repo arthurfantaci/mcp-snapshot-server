@@ -157,15 +157,39 @@ class ZoomAPIManager:
                 return response.json()
 
         except httpx.HTTPStatusError as e:
-            logger.error(f"Zoom API HTTP error: {e.response.status_code}")
+            # Try to parse Zoom's error response
+            error_details = {
+                "endpoint": endpoint,
+                "status_code": e.response.status_code,
+                "response": e.response.text,
+            }
+
+            try:
+                error_json = e.response.json()
+                zoom_error_code = error_json.get("code")
+                zoom_error_msg = error_json.get("message", "")
+                error_details["zoom_error_code"] = zoom_error_code
+                error_details["zoom_error_message"] = zoom_error_msg
+
+                # Create a more helpful error message
+                error_message = f"Zoom API error {e.response.status_code}"
+                if zoom_error_code:
+                    error_message += f" (code: {zoom_error_code})"
+                if zoom_error_msg:
+                    error_message += f": {zoom_error_msg}"
+            except Exception:
+                # If we can't parse JSON, use the raw response
+                error_message = f"Zoom API request failed: HTTP {e.response.status_code}"
+
+            logger.error(
+                error_message,
+                extra={"status_code": e.response.status_code, "endpoint": endpoint}
+            )
+
             raise MCPServerError(
                 error_code=ErrorCode.ZOOM_API_ERROR,
-                message=f"Zoom API request failed: HTTP {e.response.status_code}",
-                details={
-                    "endpoint": endpoint,
-                    "status_code": e.response.status_code,
-                    "response": e.response.text,
-                },
+                message=error_message,
+                details=error_details,
             ) from e
         except Exception as e:
             logger.error(f"Zoom API request failed: {e}")
@@ -310,6 +334,34 @@ async def list_user_recordings(
         ) from e
 
 
+def encode_meeting_id(meeting_id: str) -> str:
+    """Encode meeting ID according to Zoom API requirements.
+
+    Zoom API encoding rules:
+    - Numeric IDs: No encoding needed
+    - UUIDs with '/' or '//': Double URL-encode
+    - UUIDs with other special characters: Single URL-encode
+
+    Args:
+        meeting_id: Meeting ID or UUID
+
+    Returns:
+        Properly encoded meeting ID
+    """
+    meeting_id_str = str(meeting_id).strip()
+
+    # If it's a numeric ID, no encoding needed
+    if meeting_id_str.isdigit():
+        return meeting_id_str
+
+    # If UUID contains / or //, use double encoding
+    if '/' in meeting_id_str:
+        return quote(quote(meeting_id_str, safe=''), safe='')
+
+    # For other UUIDs with special characters, use single encoding
+    return quote(meeting_id_str, safe='')
+
+
 @retry_on_error(max_retries=3, delay=1.0, backoff=2.0)
 async def get_meeting_recordings(
     manager: ZoomAPIManager, meeting_id: str
@@ -318,7 +370,7 @@ async def get_meeting_recordings(
 
     Args:
         manager: ZoomAPIManager instance
-        meeting_id: Zoom meeting ID or UUID (will be URL-encoded)
+        meeting_id: Zoom meeting ID or UUID (will be URL-encoded as needed)
 
     Returns:
         Dictionary with meeting recording details
@@ -329,9 +381,13 @@ async def get_meeting_recordings(
     logger.info("Fetching meeting recordings", extra={"meeting_id": meeting_id})
 
     try:
-        # URL-encode the meeting_id to handle UUIDs with special characters (+, =, /)
-        # Zoom requires double URL-encoding for UUIDs containing / or //
-        encoded_meeting_id = quote(quote(str(meeting_id), safe=''), safe='')
+        # Encode meeting ID according to Zoom API requirements
+        encoded_meeting_id = encode_meeting_id(meeting_id)
+
+        logger.debug(
+            "Encoded meeting ID",
+            extra={"original": meeting_id, "encoded": encoded_meeting_id}
+        )
 
         # Make API request to get meeting recordings
         endpoint = f"/meetings/{encoded_meeting_id}/recordings"
@@ -351,6 +407,9 @@ async def get_meeting_recordings(
 
         return response
 
+    except MCPServerError:
+        # Re-raise MCPServerError to preserve detailed error information
+        raise
     except Exception as e:
         logger.error(
             f"Failed to get meeting recordings: {e}",
@@ -359,7 +418,12 @@ async def get_meeting_recordings(
         raise MCPServerError(
             error_code=ErrorCode.ZOOM_API_ERROR,
             message=f"Failed to get meeting recordings: {str(e)}",
-            details={"meeting_id": meeting_id, "error": str(e), "error_type": type(e).__name__},
+            details={
+                "meeting_id": meeting_id,
+                "encoded_id": encode_meeting_id(meeting_id),
+                "error": str(e),
+                "error_type": type(e).__name__,
+            },
         ) from e
 
 
