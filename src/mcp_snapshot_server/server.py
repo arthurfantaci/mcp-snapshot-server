@@ -502,7 +502,10 @@ class SnapshotMCPServer:
                 },
             )
 
-            # Return response
+            # Extract transcript text for immediate use
+            transcript_text = parsed_data.get("text", "")
+
+            # Build response with metadata
             response = {
                 "uri": transcript_uri,
                 "transcript_id": transcript_id,
@@ -514,11 +517,17 @@ class SnapshotMCPServer:
                 "speaker_turns": len(parsed_data.get("speaker_turns", [])),
             }
 
+            # Return response with transcript text included
             return [
                 TextContent(
                     type="text",
-                    text=f"Zoom transcript fetched and cached successfully!\n\nURI: {transcript_uri}\n\n"
-                    + json.dumps(response, indent=2),
+                    text=f"Zoom transcript fetched and cached successfully!\n\n"
+                    + f"URI: {transcript_uri}\n\n"
+                    + "Metadata:\n"
+                    + json.dumps(response, indent=2)
+                    + "\n\n"
+                    + "--- Transcript Content ---\n"
+                    + transcript_text,
                 )
             ]
 
