@@ -468,6 +468,23 @@ uv run pytest tests/test_server.py -v
 uv run pytest tests/ -k "test_snapshot" -v
 ```
 
+**Demo Mode for Testing:**
+
+Enable demo mode to test without Zoom credentials:
+
+```bash
+# Set DEMO_MODE=true in .env or via environment variable
+DEMO_MODE=true uv run python -m mcp_snapshot_server.server
+
+# The demo transcript will be available as:
+# transcript://quest-enterprises-demo
+```
+
+This preloads the Quest Enterprises fixture transcript, perfect for:
+- Testing the server without Zoom API credentials
+- Demonstrations to prospective users
+- Training and onboarding new team members
+
 ### Project Structure
 
 ```
@@ -571,6 +588,18 @@ MCP_SERVER_NAME=snapshot-server
 MCP_LOG_LEVEL=INFO
 MCP_STRUCTURED_LOGGING=true
 ```
+
+**Optional - Demo/Testing Settings:**
+```bash
+# Enable demo mode to preload Quest Enterprises demo transcript
+# Useful for testing, demonstrations, and training
+DEMO_MODE=false  # Set to true to enable
+```
+
+When `DEMO_MODE=true`, the server automatically loads the Quest Enterprises demo transcript (from `tests/fixtures/quest_enterprises_project_kickoff_transcript.vtt`) and makes it available as:
+- **URI:** `transcript://quest-enterprises-demo`
+- **Resource:** Accessible via MCP resources for direct querying
+- **Use cases:** Testing without Zoom credentials, demonstrations to prospective users, training sessions
 
 💡 **Tip:** Copy `.env.example` to `.env` and update with your credentials. See [docs/ZOOM_SETUP.md](docs/ZOOM_SETUP.md) for step-by-step Zoom OAuth setup.
 

@@ -59,6 +59,10 @@ class SnapshotMCPServer:
         # Register handlers
         self._register_handlers()
 
+        # Load demo transcript if enabled
+        if self.settings.demo.mode:
+            self._load_demo_transcript()
+
         self.logger.info("MCP Snapshot Server initialized")
 
     def _register_handlers(self):
@@ -76,6 +80,70 @@ class SnapshotMCPServer:
         self.server.get_prompt()(self._get_prompt)
 
         self.logger.info("MCP handlers registered")
+
+    def _load_demo_transcript(self):
+        """Load Quest Enterprises demo transcript for demonstrations.
+
+        This method loads the Quest Enterprises fixture transcript into memory
+        when DEMO_MODE is enabled, making it available as transcript://quest-enterprises-demo
+        for testing, demonstrations, and training purposes.
+        """
+        from mcp_snapshot_server.tools.transcript_utils import parse_vtt_content
+
+        # Path to demo transcript fixture
+        fixture_path = Path(__file__).parent.parent.parent / "tests" / "fixtures" / "quest_enterprises_project_kickoff_transcript.vtt"
+
+        if not fixture_path.exists():
+            self.logger.warning(
+                "Demo transcript file not found",
+                extra={"path": str(fixture_path)}
+            )
+            return
+
+        try:
+            # Read VTT content
+            with open(fixture_path, 'r', encoding='utf-8') as f:
+                vtt_content = f.read()
+
+            # Parse VTT content
+            filename = "quest_enterprises_project_kickoff_transcript.vtt"
+            parsed_data = parse_vtt_content(vtt_content, filename)
+
+            # Use fixed ID for demo transcript (not hash-based)
+            transcript_id = "quest-enterprises-demo"
+            transcript_uri = f"transcript://{transcript_id}"
+
+            # Store with demo metadata
+            self.transcripts[transcript_id] = {
+                "content": vtt_content,
+                "filename": filename,
+                "parsed_data": parsed_data,
+                "uri": transcript_uri,
+                "source": "demo",
+                "demo_metadata": {
+                    "meeting_id": "demo",
+                    "topic": "Quest Enterprises - Quiznos Analytics Professional Services Engagement Kickoff",
+                    "start_time": "2024-07-14T09:00:00Z",
+                    "duration": 4113,  # ~68 minutes
+                    "description": "Demo transcript for testing and demonstrations"
+                }
+            }
+
+            self.logger.info(
+                "Demo transcript loaded successfully",
+                extra={
+                    "transcript_id": transcript_id,
+                    "uri": transcript_uri,
+                    "speakers": len(parsed_data.get("speakers", [])),
+                    "filename": filename
+                }
+            )
+
+        except Exception as e:
+            self.logger.error(
+                "Failed to load demo transcript",
+                extra={"error": str(e), "path": str(fixture_path)}
+            )
 
     # ==================== Tools Primitive ====================
 

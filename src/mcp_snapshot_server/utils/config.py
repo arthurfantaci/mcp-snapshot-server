@@ -202,6 +202,19 @@ class ZoomSettings(BaseSettings):
     )
 
 
+class DemoSettings(BaseSettings):
+    """Demo mode configuration."""
+
+    model_config = SettingsConfigDict(
+        env_prefix="DEMO_", env_file=".env", extra="ignore"
+    )
+
+    mode: bool = Field(
+        default=False,
+        description="Enable demo mode to preload Quest Enterprises demo transcript",
+    )
+
+
 class Settings:
     """Aggregated settings for the entire application."""
 
@@ -212,6 +225,7 @@ class Settings:
         self.workflow = WorkflowSettings()
         self.nlp = NLPSettings()
         self.zoom = ZoomSettings()
+        self.demo = DemoSettings()
 
     def validate(self) -> bool:
         """Validate all settings.
