@@ -4,12 +4,13 @@ import re
 from typing import Any
 
 from mcp_snapshot_server.agents.base import BaseAgent
+from mcp_snapshot_server.models.validation import ValidationInput, ValidationResult
 from mcp_snapshot_server.prompts.system_prompts import SYSTEM_PROMPTS
 from mcp_snapshot_server.utils.logging_config import ContextLogger
 from mcp_snapshot_server.utils.sampling import sample_llm
 
 
-class ValidationAgent(BaseAgent):
+class ValidationAgent(BaseAgent[ValidationInput, ValidationResult]):
     """Agent responsible for validating section consistency and quality."""
 
     def __init__(self, logger: ContextLogger):
@@ -20,16 +21,16 @@ class ValidationAgent(BaseAgent):
             logger=logger,
         )
 
-    async def process(self, input_data: dict[str, Any]) -> dict[str, Any]:
+    async def process(self, input_data: ValidationInput) -> ValidationResult:
         """Validate sections for consistency and quality.
 
         Args:
-            input_data: Dictionary containing sections to validate
+            input_data: ValidationInput model containing sections to validate
 
         Returns:
-            Validation results with issues and suggestions
+            ValidationResult model with issues and suggestions
         """
-        sections = input_data["sections"]
+        sections = input_data.sections
 
         self.logger.info(
             "Starting section validation", extra={"sections_count": len(sections)}
@@ -52,10 +53,8 @@ class ValidationAgent(BaseAgent):
         self.logger.info(
             "Validation complete",
             extra={
-                "issues_found": len(merged_results.get("issues", [])),
-                "requires_improvements": merged_results.get(
-                    "requires_improvements", False
-                ),
+                "issues_found": merged_results.issue_count,
+                "requires_improvements": merged_results.requires_improvements,
             },
         )
 
@@ -101,7 +100,7 @@ OUTPUT: Structured feedback as shown above
                 temperature=0.2,
                 max_tokens=1500,
             )
-            return self._parse_validation_response(response["content"])
+            return self._parse_validation_response(response.content)
         except Exception as e:
             self.logger.warning(f"LLM validation failed: {e}")
             return {}
@@ -220,19 +219,17 @@ OUTPUT: Structured feedback as shown above
 
     def _merge_validation_results(
         self, llm_results: dict[str, Any], heuristic_results: dict[str, Any]
-    ) -> dict[str, Any]:
+    ) -> ValidationResult:
         """Merge LLM and heuristic validation results."""
-        merged = {
-            "factual_consistency": llm_results.get("factual_consistency", True),
-            "completeness": llm_results.get("completeness", True),
-            "quality": llm_results.get("quality", True),
-            "issues": llm_results.get("issues", [])
-            + heuristic_results.get("issues", []),
-            "improvements": llm_results.get("improvements", []),
-            "requires_improvements": (
+        return ValidationResult(
+            factual_consistency=llm_results.get("factual_consistency", True),
+            completeness=llm_results.get("completeness", True),
+            quality=llm_results.get("quality", True),
+            issues=llm_results.get("issues", []) + heuristic_results.get("issues", []),
+            improvements=llm_results.get("improvements", []),
+            requires_improvements=(
                 llm_results.get("requires_improvements", False)
                 or len(heuristic_results.get("issues", [])) > 0
             ),
-            "missing_critical_info": llm_results.get("missing_critical_info", []),
-        }
-        return merged
+            missing_critical_info=llm_results.get("missing_critical_info", []),
+        )

@@ -5,10 +5,10 @@ from the Anthropic API using MCP sampling patterns.
 """
 
 import logging
-from typing import Any
 
 from anthropic import Anthropic
 
+from mcp_snapshot_server.models import LLMResponse, LLMResponseMetadata, LLMTokenUsage
 from mcp_snapshot_server.utils.config import get_settings
 from mcp_snapshot_server.utils.errors import (
     ErrorCode,
@@ -26,7 +26,7 @@ async def sample_llm(
     temperature: float | None = None,
     max_tokens: int | None = None,
     model: str | None = None,
-) -> dict[str, Any]:
+) -> LLMResponse:
     """Request LLM completion via Anthropic API.
 
     Args:
@@ -37,7 +37,7 @@ async def sample_llm(
         model: Model identifier, uses config default if None
 
     Returns:
-        Dictionary with 'content' and 'metadata' keys
+        LLMResponse with content and metadata
 
     Raises:
         MCPServerError: If API call fails
@@ -91,17 +91,17 @@ async def sample_llm(
             },
         )
 
-        return {
-            "content": content,
-            "metadata": {
-                "model": model,
-                "tokens_used": {
-                    "input": response.usage.input_tokens,
-                    "output": response.usage.output_tokens,
-                },
-                "finish_reason": response.stop_reason,
-            },
-        }
+        return LLMResponse(
+            content=content,
+            metadata=LLMResponseMetadata(
+                model=model,
+                tokens_used=LLMTokenUsage(
+                    input=response.usage.input_tokens,
+                    output=response.usage.output_tokens,
+                ),
+                finish_reason=response.stop_reason,
+            ),
+        )
 
     except Exception as e:
         error_msg = f"LLM sampling failed: {str(e)}"

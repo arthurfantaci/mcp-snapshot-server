@@ -11,6 +11,19 @@ from mcp_snapshot_server.agents.analyzer import AnalysisAgent
 from mcp_snapshot_server.agents.base import BaseAgent
 from mcp_snapshot_server.agents.section_generator import SectionGeneratorAgent
 from mcp_snapshot_server.agents.validator import ValidationAgent
+from mcp_snapshot_server.models import (
+    AnalysisInput,
+    AnalysisResult,
+    OrchestrationInput,
+    SectionContent,
+    SectionGeneratorInput,
+    SectionResult,
+    SnapshotMetadata,
+    SnapshotOutput,
+    TranscriptData,
+    ValidationInput,
+    ValidationResult,
+)
 from mcp_snapshot_server.prompts.section_prompts import SECTION_PROMPTS
 from mcp_snapshot_server.prompts.system_prompts import SYSTEM_PROMPTS
 from mcp_snapshot_server.tools.transcript_utils import parse_vtt_content
@@ -84,29 +97,23 @@ class OrchestrationAgent(BaseAgent):
                 logger=logger,
             )
 
-    async def process(self, input_data: dict[str, Any]) -> dict[str, Any]:
+    async def process(self, input_data: OrchestrationInput) -> SnapshotOutput:
         """Generate complete Customer Success Snapshot from VTT transcript content.
 
         Args:
-            input_data: Dictionary containing:
-                - vtt_content: VTT transcript content as string
-                - filename: Optional filename for context (default: "transcript.vtt")
+            input_data: OrchestrationInput containing VTT content and filename
 
         Returns:
-            Dictionary containing:
-                - sections: All generated sections
-                - metadata: Generation metadata
-                - validation: Validation results
-                - missing_fields: Aggregated missing fields
+            SnapshotOutput with all generated sections, metadata, and validation
         """
-        vtt_content = input_data.get("vtt_content")
-        filename = input_data.get("filename", "transcript.vtt")
+        vtt_content = input_data.vtt_content
+        filename = input_data.filename
 
         if not vtt_content:
             raise MCPServerError(
                 error_code=ErrorCode.INVALID_INPUT,
                 message="vtt_content is required",
-                details={"input_data": input_data},
+                details={"filename": filename},
             )
 
         self.logger.info(
@@ -128,7 +135,7 @@ class OrchestrationAgent(BaseAgent):
             validation_results = await self._validate_sections(sections)
 
             # Step 5: Handle improvements if needed
-            if validation_results.get("requires_improvements", False):
+            if validation_results.requires_improvements:
                 sections = await self._improve_sections(
                     sections, validation_results, transcript_data, analysis_results
                 )
@@ -148,9 +155,7 @@ class OrchestrationAgent(BaseAgent):
                 "Snapshot generation complete",
                 extra={
                     "sections_count": len(sections),
-                    "validation_passed": not final_validation.get(
-                        "requires_improvements", False
-                    ),
+                    "validation_passed": not final_validation.requires_improvements,
                 },
             )
 
@@ -167,7 +172,7 @@ class OrchestrationAgent(BaseAgent):
                 details={"filename": filename, "error": str(e)},
             ) from e
 
-    def _parse_transcript(self, vtt_content: str, filename: str = "transcript.vtt") -> dict[str, Any]:
+    def _parse_transcript(self, vtt_content: str, filename: str = "transcript.vtt") -> TranscriptData:
         """Parse VTT transcript content.
 
         Args:
@@ -175,7 +180,7 @@ class OrchestrationAgent(BaseAgent):
             filename: Optional filename for context
 
         Returns:
-            Parsed transcript data
+            Parsed TranscriptData model
         """
         self.logger.info("Parsing VTT transcript", extra={"filename": filename, "content_length": len(vtt_content)})
 
@@ -184,9 +189,9 @@ class OrchestrationAgent(BaseAgent):
             self.logger.info(
                 "Transcript parsed successfully",
                 extra={
-                    "speaker_count": len(transcript_data.get("speakers", [])),
-                    "turn_count": len(transcript_data.get("speaker_turns", [])),
-                    "duration": transcript_data.get("duration", 0),
+                    "speaker_count": transcript_data.speaker_count,
+                    "turn_count": transcript_data.turn_count,
+                    "duration": transcript_data.duration,
                 },
             )
             return transcript_data
@@ -198,53 +203,50 @@ class OrchestrationAgent(BaseAgent):
             ) from e
 
     async def _analyze_transcript(
-        self, transcript_data: dict[str, Any]
-    ) -> dict[str, Any]:
+        self, transcript_data: TranscriptData
+    ) -> AnalysisResult:
         """Analyze transcript using Analysis Agent.
 
         Args:
-            transcript_data: Parsed transcript data
+            transcript_data: Parsed TranscriptData model
 
         Returns:
-            Analysis results
+            AnalysisResult model
         """
         self.logger.info("Starting transcript analysis")
 
-        analysis_results = await self.analysis_agent.process(
-            {
-                "transcript": transcript_data.get("text", ""),
-                "transcript_data": transcript_data
-            }
+        analysis_input = AnalysisInput(
+            transcript=transcript_data.text,
+            transcript_data=transcript_data,
         )
+        analysis_results = await self.analysis_agent.process(analysis_input)
 
         self.logger.info(
             "Transcript analysis complete",
             extra={
-                "entities_count": sum(
-                    len(v) for v in analysis_results.get("entities", {}).values()
-                ),
-                "topics_count": len(analysis_results.get("topics", [])),
+                "entities_count": analysis_results.entity_count,
+                "topics_count": len(analysis_results.topics),
             },
         )
 
         return analysis_results
 
     async def _generate_sections(
-        self, transcript_data: dict[str, Any], analysis_results: dict[str, Any]
-    ) -> dict[str, dict[str, Any]]:
+        self, transcript_data: TranscriptData, analysis_results: AnalysisResult
+    ) -> dict[str, SectionResult]:
         """Generate all sections (excluding Executive Summary).
 
         Args:
-            transcript_data: Parsed transcript data
-            analysis_results: Analysis results
+            transcript_data: Parsed TranscriptData model
+            analysis_results: AnalysisResult model
 
         Returns:
-            Dictionary of generated sections
+            Dictionary mapping section names to SectionResult models
         """
         self.logger.info("Starting section generation", extra={"section_count": 10})
 
-        sections = {}
-        transcript_text = transcript_data.get("text", "")
+        sections: dict[str, SectionResult] = {}
+        transcript_text = transcript_data.text
 
         # Determine if we should generate sections in parallel or sequential
         if self.settings.workflow.parallel_section_generation:
@@ -260,7 +262,7 @@ class OrchestrationAgent(BaseAgent):
             "Section generation complete",
             extra={
                 "sections_generated": len(sections),
-                "avg_confidence": sum(s.get("confidence", 0) for s in sections.values())
+                "avg_confidence": sum(s.confidence for s in sections.values())
                 / len(sections)
                 if sections
                 else 0,
@@ -270,16 +272,16 @@ class OrchestrationAgent(BaseAgent):
         return sections
 
     async def _generate_sections_parallel(
-        self, transcript_text: str, analysis_results: dict[str, Any]
-    ) -> dict[str, dict[str, Any]]:
+        self, transcript_text: str, analysis_results: AnalysisResult
+    ) -> dict[str, SectionResult]:
         """Generate sections in parallel.
 
         Args:
             transcript_text: Full transcript text
-            analysis_results: Analysis results
+            analysis_results: AnalysisResult model
 
         Returns:
-            Dictionary of generated sections
+            Dictionary mapping section names to SectionResult models
         """
         tasks = []
         section_names = []
@@ -287,13 +289,12 @@ class OrchestrationAgent(BaseAgent):
         # Create tasks for all sections except Executive Summary
         for section_name in self.SECTION_NAMES[:-1]:
             generator = self.section_generators[section_name]
-            task = generator.process(
-                {
-                    "transcript": transcript_text,
-                    "analysis": analysis_results,
-                    "context": {},
-                }
+            input_data = SectionGeneratorInput(
+                transcript=transcript_text,
+                analysis=analysis_results,
+                context={},
             )
+            task = generator.process(input_data)
             tasks.append(task)
             section_names.append(section_name)
 
@@ -301,88 +302,84 @@ class OrchestrationAgent(BaseAgent):
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
         # Build sections dictionary
-        sections = {}
+        sections: dict[str, SectionResult] = {}
         for section_name, result in zip(section_names, results, strict=False):
             if isinstance(result, Exception):
                 self.logger.warning(
                     f"Section generation failed: {section_name}",
                     extra={"error": str(result)},
                 )
-                # Create placeholder section
-                sections[section_name] = {
-                    "section_name": section_name,
-                    "content": f"[Section generation failed: {str(result)}]",
-                    "confidence": 0.0,
-                    "missing_fields": [],
-                    "metadata": {"error": str(result)},
-                }
+                # Create placeholder section using error_placeholder method
+                sections[section_name] = SectionResult.error_placeholder(
+                    section_name=section_name,
+                    error=str(result),
+                )
             else:
                 sections[section_name] = result
 
         return sections
 
     async def _generate_sections_sequential(
-        self, transcript_text: str, analysis_results: dict[str, Any]
-    ) -> dict[str, dict[str, Any]]:
+        self, transcript_text: str, analysis_results: AnalysisResult
+    ) -> dict[str, SectionResult]:
         """Generate sections sequentially.
 
         Args:
             transcript_text: Full transcript text
-            analysis_results: Analysis results
+            analysis_results: AnalysisResult model
 
         Returns:
-            Dictionary of generated sections
+            Dictionary mapping section names to SectionResult models
         """
-        sections = {}
+        sections: dict[str, SectionResult] = {}
 
         for section_name in self.SECTION_NAMES[:-1]:
             try:
                 generator = self.section_generators[section_name]
-                result = await generator.process(
-                    {
-                        "transcript": transcript_text,
-                        "analysis": analysis_results,
-                        "context": {},
-                    }
+                input_data = SectionGeneratorInput(
+                    transcript=transcript_text,
+                    analysis=analysis_results,
+                    context={},
                 )
+                result = await generator.process(input_data)
                 sections[section_name] = result
             except Exception as e:
                 self.logger.warning(
                     f"Section generation failed: {section_name}",
                     extra={"error": str(e)},
                 )
-                sections[section_name] = {
-                    "section_name": section_name,
-                    "content": f"[Section generation failed: {str(e)}]",
-                    "confidence": 0.0,
-                    "missing_fields": [],
-                    "metadata": {"error": str(e)},
-                }
+                sections[section_name] = SectionResult.error_placeholder(
+                    section_name=section_name,
+                    error=str(e),
+                )
 
         return sections
 
     async def _validate_sections(
-        self, sections: dict[str, dict[str, Any]]
-    ) -> dict[str, Any]:
+        self, sections: dict[str, SectionResult]
+    ) -> ValidationResult:
         """Validate generated sections.
 
         Args:
-            sections: Generated sections
+            sections: Dictionary mapping section names to SectionResult models
 
         Returns:
-            Validation results
+            ValidationResult model
         """
         self.logger.info("Validating sections", extra={"section_count": len(sections)})
 
-        validation_results = await self.validation_agent.process({"sections": sections})
+        # Convert SectionResult models to dict for validation
+        sections_dict = {
+            name: result.model_dump() for name, result in sections.items()
+        }
+        validation_input = ValidationInput(sections=sections_dict)
+        validation_results = await self.validation_agent.process(validation_input)
 
         self.logger.info(
             "Validation complete",
             extra={
-                "issues_found": len(validation_results.get("issues", [])),
-                "requires_improvements": validation_results.get(
-                    "requires_improvements", False
-                ),
+                "issues_found": validation_results.issue_count,
+                "requires_improvements": validation_results.requires_improvements,
             },
         )
 
@@ -390,33 +387,32 @@ class OrchestrationAgent(BaseAgent):
 
     async def _improve_sections(
         self,
-        sections: dict[str, dict[str, Any]],
-        validation_results: dict[str, Any],
-        transcript_data: dict[str, Any],
-        analysis_results: dict[str, Any],
-    ) -> dict[str, dict[str, Any]]:
+        sections: dict[str, SectionResult],
+        validation_results: ValidationResult,
+        transcript_data: TranscriptData,
+        analysis_results: AnalysisResult,
+    ) -> dict[str, SectionResult]:
         """Improve sections based on validation results.
 
         Args:
-            sections: Current sections
-            validation_results: Validation results
-            transcript_data: Original transcript data
-            analysis_results: Analysis results
+            sections: Dictionary mapping section names to SectionResult models
+            validation_results: ValidationResult model
+            transcript_data: Original TranscriptData model
+            analysis_results: AnalysisResult model
 
         Returns:
-            Improved sections
+            Improved sections dictionary
         """
         self.logger.info(
             "Attempting to improve sections",
-            extra={"issues": len(validation_results.get("issues", []))},
+            extra={"issues": validation_results.issue_count},
         )
 
         # For now, just log the issues and return sections as-is
         # In a production system, this would implement iterative improvement
         # by re-generating low-confidence sections with enhanced prompts
 
-        issues = validation_results.get("issues", [])
-        for issue in issues:
+        for issue in validation_results.issues:
             self.logger.info(f"Validation issue: {issue}")
 
         # Identify low-confidence sections
@@ -424,7 +420,7 @@ class OrchestrationAgent(BaseAgent):
         low_confidence_sections = [
             name
             for name, section in sections.items()
-            if section.get("confidence", 1.0) < low_confidence_threshold
+            if section.confidence < low_confidence_threshold
         ]
 
         if low_confidence_sections:
@@ -442,15 +438,15 @@ class OrchestrationAgent(BaseAgent):
         return sections
 
     async def _generate_executive_summary(
-        self, sections: dict[str, dict[str, Any]]
-    ) -> dict[str, Any]:
+        self, sections: dict[str, SectionResult]
+    ) -> SectionResult:
         """Generate Executive Summary from all other sections.
 
         Args:
-            sections: All generated sections (excluding Executive Summary)
+            sections: Dictionary mapping section names to SectionResult models
 
         Returns:
-            Executive Summary section
+            Executive Summary SectionResult
         """
         self.logger.info("Generating Executive Summary")
 
@@ -468,26 +464,25 @@ class OrchestrationAgent(BaseAgent):
         )
 
         # Generate with all sections as context
-        result = await exec_summary_generator.process(
-            {
-                "transcript": "",  # Not needed for executive summary
-                "analysis": {},
-                "context": {"all_sections": all_sections_text},
-            }
+        input_data = SectionGeneratorInput(
+            transcript="",  # Not needed for executive summary
+            analysis={},
+            context={"all_sections": all_sections_text},
         )
+        result = await exec_summary_generator.process(input_data)
 
         self.logger.info(
             "Executive Summary generated",
-            extra={"confidence": result.get("confidence", 0)},
+            extra={"confidence": result.confidence},
         )
 
         return result
 
-    def _build_all_sections_text(self, sections: dict[str, dict[str, Any]]) -> str:
+    def _build_all_sections_text(self, sections: dict[str, SectionResult]) -> str:
         """Build formatted text from all sections.
 
         Args:
-            sections: All sections
+            sections: Dictionary mapping section names to SectionResult models
 
         Returns:
             Formatted text
@@ -496,50 +491,55 @@ class OrchestrationAgent(BaseAgent):
         for name, section in sections.items():
             if name == "Executive Summary":
                 continue  # Don't include executive summary in its own input
-            content = section.get("content", "")
-            parts.append(f"## {name}\n{content}")
+            parts.append(f"## {name}\n{section.content}")
         return "\n\n".join(parts)
 
     def _assemble_output(
         self,
-        sections: dict[str, dict[str, Any]],
-        analysis_results: dict[str, Any],
-        validation_results: dict[str, Any],
-    ) -> dict[str, Any]:
+        sections: dict[str, SectionResult],
+        analysis_results: AnalysisResult,
+        validation_results: ValidationResult,
+    ) -> SnapshotOutput:
         """Assemble final output.
 
         Args:
-            sections: All generated sections
-            analysis_results: Analysis results
-            validation_results: Final validation results
+            sections: Dictionary mapping section names to SectionResult models
+            analysis_results: AnalysisResult model
+            validation_results: ValidationResult model
 
         Returns:
-            Complete snapshot output
+            SnapshotOutput model
         """
         # Aggregate missing fields
-        all_missing_fields = []
+        all_missing_fields: list[str] = []
         for section in sections.values():
-            all_missing_fields.extend(section.get("missing_fields", []))
+            all_missing_fields.extend(section.missing_fields)
 
         # Calculate overall confidence
-        confidences = [s.get("confidence", 0) for s in sections.values()]
-        avg_confidence = sum(confidences) / len(confidences) if confidences else 0
+        confidences = [s.confidence for s in sections.values()]
+        avg_confidence = sum(confidences) / len(confidences) if confidences else 0.0
 
-        return {
-            "sections": {
-                name: {
-                    "content": section.get("content", ""),
-                    "confidence": section.get("confidence", 0),
-                    "missing_fields": section.get("missing_fields", []),
-                }
-                for name, section in sections.items()
-            },
-            "metadata": {
-                "avg_confidence": avg_confidence,
-                "total_sections": len(sections),
-                "entities_extracted": analysis_results.get("entities", {}),
-                "topics_identified": analysis_results.get("topics", []),
-            },
-            "validation": validation_results,
-            "missing_fields": list(set(all_missing_fields)),  # Deduplicate
+        # Build SectionContent models for each section
+        section_contents = {
+            name: SectionContent(
+                content=section.content,
+                confidence=section.confidence,
+                missing_fields=section.missing_fields,
+            )
+            for name, section in sections.items()
         }
+
+        # Build metadata
+        metadata = SnapshotMetadata(
+            avg_confidence=avg_confidence,
+            total_sections=len(sections),
+            entities_extracted=analysis_results.entities,
+            topics_identified=analysis_results.topics,
+        )
+
+        return SnapshotOutput(
+            sections=section_contents,
+            metadata=metadata,
+            validation=validation_results,
+            missing_fields=list(set(all_missing_fields)),  # Deduplicate
+        )

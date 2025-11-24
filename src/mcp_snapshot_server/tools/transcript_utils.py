@@ -8,10 +8,14 @@ import io
 import logging
 import re
 from pathlib import Path
-from typing import Any
 
 import webvtt
 
+from mcp_snapshot_server.models.transcript import (
+    SpeakerTurn,
+    TranscriptData,
+    TranscriptMetadata,
+)
 from mcp_snapshot_server.utils.errors import ErrorCode, MCPServerError
 
 logger = logging.getLogger(__name__)
@@ -108,7 +112,7 @@ def clean_transcript_text(text: str) -> str:
     return text.strip()
 
 
-def parse_vtt_content(vtt_content: str, filename: str = "transcript.vtt") -> dict[str, Any]:
+def parse_vtt_content(vtt_content: str, filename: str = "transcript.vtt") -> TranscriptData:
     """Parse VTT transcript content string directly.
 
     Args:
@@ -116,12 +120,7 @@ def parse_vtt_content(vtt_content: str, filename: str = "transcript.vtt") -> dic
         filename: Optional filename for context in error messages and metadata
 
     Returns:
-        Dictionary containing:
-            - text: Full transcript text with speaker labels
-            - speakers: List of unique speakers
-            - speaker_turns: List of individual speaking turns
-            - duration: Duration in seconds
-            - metadata: Additional metadata
+        TranscriptData model containing parsed transcript data
 
     Raises:
         MCPServerError: If content cannot be parsed
@@ -213,17 +212,17 @@ def parse_vtt_content(vtt_content: str, filename: str = "transcript.vtt") -> dic
             },
         )
 
-        return {
-            "text": full_text,
-            "speakers": sorted(speakers),
-            "speaker_turns": speaker_turns,
-            "duration": duration,
-            "metadata": {
-                "vtt_filename": filename,
-                "caption_count": len(vtt_data.captions),
-                "speaker_count": len(speakers),
-            },
-        }
+        return TranscriptData(
+            text=full_text,
+            speakers=sorted(speakers),
+            speaker_turns=[SpeakerTurn(**turn) for turn in speaker_turns],
+            duration=duration,
+            metadata=TranscriptMetadata(
+                vtt_filename=filename,
+                caption_count=len(vtt_data.captions),
+                speaker_count=len(speakers),
+            ),
+        )
 
     except webvtt.errors.MalformedFileError as e:
         raise MCPServerError(
@@ -244,19 +243,14 @@ def parse_vtt_content(vtt_content: str, filename: str = "transcript.vtt") -> dic
         ) from e
 
 
-def parse_vtt_transcript(file_path: str) -> dict[str, Any]:
+def parse_vtt_transcript(file_path: str) -> TranscriptData:
     """Parse VTT transcript file and extract structured data.
 
     Args:
         file_path: Path to VTT transcript file
 
     Returns:
-        Dictionary containing:
-            - text: Full transcript text with speaker labels
-            - speakers: List of unique speakers
-            - speaker_turns: List of individual speaking turns
-            - duration: Duration in seconds
-            - metadata: Additional metadata
+        TranscriptData model containing parsed transcript data
 
     Raises:
         MCPServerError: If file cannot be parsed
@@ -332,17 +326,17 @@ def parse_vtt_transcript(file_path: str) -> dict[str, Any]:
             },
         )
 
-        return {
-            "text": full_text,
-            "speakers": sorted(speakers),
-            "speaker_turns": speaker_turns,
-            "duration": duration,
-            "metadata": {
-                "file_path": str(path),
-                "caption_count": len(vtt_data.captions),
-                "speaker_count": len(speakers),
-            },
-        }
+        return TranscriptData(
+            text=full_text,
+            speakers=sorted(speakers),
+            speaker_turns=[SpeakerTurn(**turn) for turn in speaker_turns],
+            duration=duration,
+            metadata=TranscriptMetadata(
+                file_path=str(path),
+                caption_count=len(vtt_data.captions),
+                speaker_count=len(speakers),
+            ),
+        )
 
     except webvtt.errors.MalformedFileError as e:
         raise MCPServerError(
@@ -359,26 +353,13 @@ def parse_vtt_transcript(file_path: str) -> dict[str, Any]:
         )
 
 
-def get_transcript_summary(transcript_data: dict[str, Any]) -> str:
+def get_transcript_summary(transcript_data: TranscriptData) -> str:
     """Generate a brief summary of transcript data.
 
     Args:
-        transcript_data: Parsed transcript data
+        transcript_data: Parsed TranscriptData model
 
     Returns:
         Human-readable summary string
     """
-    speakers = transcript_data.get("speakers", [])
-    duration = transcript_data.get("duration", 0)
-    turns = transcript_data.get("speaker_turns", [])
-    text_length = len(transcript_data.get("text", ""))
-
-    minutes = int(duration // 60)
-    seconds = int(duration % 60)
-
-    return f"""Transcript Summary:
-- Speakers: {len(speakers)} ({", ".join(speakers[:3])}{"..." if len(speakers) > 3 else ""})
-- Duration: {minutes}m {seconds}s
-- Speaking turns: {len(turns)}
-- Total text length: {text_length:,} characters
-"""
+    return transcript_data.get_summary()

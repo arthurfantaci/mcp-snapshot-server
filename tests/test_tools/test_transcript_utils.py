@@ -4,6 +4,11 @@ from pathlib import Path
 
 import pytest
 
+from mcp_snapshot_server.models.transcript import (
+    SpeakerTurn,
+    TranscriptData,
+    TranscriptMetadata,
+)
 from mcp_snapshot_server.tools.transcript_utils import (
     clean_transcript_text,
     extract_speaker_info,
@@ -128,36 +133,34 @@ class TestParseVTTTranscript:
         """Test parsing sample VTT file."""
         result = parse_vtt_transcript(str(sample_vtt_path))
 
-        assert "text" in result
-        assert "speakers" in result
-        assert "speaker_turns" in result
-        assert "duration" in result
-        assert "metadata" in result
+        # Check result is TranscriptData model
+        assert isinstance(result, TranscriptData)
+        assert isinstance(result.metadata, TranscriptMetadata)
 
         # Check that we extracted speakers
-        assert len(result["speakers"]) > 0
-        assert "John Smith" in result["speakers"]
+        assert len(result.speakers) > 0
+        assert "John Smith" in result.speakers
 
         # Check that we have speaking turns
-        assert len(result["speaker_turns"]) > 0
+        assert len(result.speaker_turns) > 0
+        assert isinstance(result.speaker_turns[0], SpeakerTurn)
 
         # Check text is not empty
-        assert len(result["text"]) > 0
+        assert len(result.text) > 0
 
     def test_parse_includes_metadata(self, sample_vtt_path: Path) -> None:
         """Test that parsing includes metadata."""
         result = parse_vtt_transcript(str(sample_vtt_path))
 
-        metadata = result["metadata"]
-        assert "file_path" in metadata
-        assert "caption_count" in metadata
-        assert "speaker_count" in metadata
+        assert result.metadata.file_path is not None
+        assert result.metadata.caption_count > 0
+        assert result.metadata.speaker_count > 0
 
     def test_parse_calculates_duration(self, sample_vtt_path: Path) -> None:
         """Test that duration is calculated."""
         result = parse_vtt_transcript(str(sample_vtt_path))
 
-        assert result["duration"] > 0
+        assert result.duration > 0
 
     def test_parse_nonexistent_file(self) -> None:
         """Test parsing nonexistent file raises error."""
@@ -173,37 +176,34 @@ class TestParseVTTContent:
         """Test parsing VTT content string."""
         result = parse_vtt_content(sample_vtt_content, "sample.vtt")
 
-        assert "text" in result
-        assert "speakers" in result
-        assert "speaker_turns" in result
-        assert "duration" in result
-        assert "metadata" in result
+        # Check result is TranscriptData model
+        assert isinstance(result, TranscriptData)
+        assert isinstance(result.metadata, TranscriptMetadata)
 
         # Check that we extracted speakers
-        assert len(result["speakers"]) > 0
-        assert "John Smith" in result["speakers"]
+        assert len(result.speakers) > 0
+        assert "John Smith" in result.speakers
 
         # Check that we have speaking turns
-        assert len(result["speaker_turns"]) > 0
+        assert len(result.speaker_turns) > 0
+        assert isinstance(result.speaker_turns[0], SpeakerTurn)
 
         # Check text is not empty
-        assert len(result["text"]) > 0
+        assert len(result.text) > 0
 
     def test_parse_content_includes_metadata(self, sample_vtt_content: str) -> None:
         """Test that parsing includes metadata with filename."""
         result = parse_vtt_content(sample_vtt_content, "test.vtt")
 
-        metadata = result["metadata"]
-        assert "filename" in metadata
-        assert metadata["filename"] == "test.vtt"
-        assert "caption_count" in metadata
-        assert "speaker_count" in metadata
+        assert result.metadata.vtt_filename == "test.vtt"
+        assert result.metadata.caption_count > 0
+        assert result.metadata.speaker_count > 0
 
     def test_parse_content_calculates_duration(self, sample_vtt_content: str) -> None:
         """Test that duration is calculated from content."""
         result = parse_vtt_content(sample_vtt_content)
 
-        assert result["duration"] > 0
+        assert result.duration > 0
 
     def test_parse_empty_content_raises_error(self) -> None:
         """Test parsing empty content raises error."""
@@ -236,11 +236,11 @@ Speaker 2: This is a response.
 
         result = parse_vtt_content(minimal_vtt, "minimal.vtt")
 
-        assert len(result["speakers"]) == 2
-        assert "Speaker 1" in result["speakers"]
-        assert "Speaker 2" in result["speakers"]
-        assert len(result["speaker_turns"]) == 2
-        assert result["duration"] == 10.0
+        assert len(result.speakers) == 2
+        assert "Speaker 1" in result.speakers
+        assert "Speaker 2" in result.speakers
+        assert len(result.speaker_turns) == 2
+        assert result.duration == 10.0
 
 
 @pytest.mark.unit
@@ -249,12 +249,17 @@ class TestGetTranscriptSummary:
 
     def test_generate_summary(self) -> None:
         """Test generating transcript summary."""
-        transcript_data = {
-            "text": "Sample transcript text",
-            "speakers": ["Alice", "Bob", "Charlie"],
-            "speaker_turns": [{"speaker": "Alice", "text": "Hello"}] * 10,
-            "duration": 185.5,  # 3m 5.5s
-        }
+        transcript_data = TranscriptData(
+            text="Sample transcript text",
+            speakers=["Alice", "Bob", "Charlie"],
+            speaker_turns=[
+                SpeakerTurn(
+                    speaker="Alice", text="Hello", start="00:00:00.000", end="00:00:05.000"
+                )
+                for _ in range(10)
+            ],
+            duration=185.5,  # 3m 5.5s
+        )
 
         summary = get_transcript_summary(transcript_data)
 
@@ -265,12 +270,12 @@ class TestGetTranscriptSummary:
 
     def test_summary_truncates_speakers(self) -> None:
         """Test that summary truncates long speaker lists."""
-        transcript_data = {
-            "text": "text",
-            "speakers": ["Person1", "Person2", "Person3", "Person4", "Person5"],
-            "speaker_turns": [],
-            "duration": 100,
-        }
+        transcript_data = TranscriptData(
+            text="text",
+            speakers=["Person1", "Person2", "Person3", "Person4", "Person5"],
+            speaker_turns=[],
+            duration=100,
+        )
 
         summary = get_transcript_summary(transcript_data)
 

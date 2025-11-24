@@ -8,6 +8,13 @@ import json
 from typing import Any
 
 from mcp_snapshot_server.agents.base import BaseAgent
+from mcp_snapshot_server.models.analysis import (
+    AnalysisInput,
+    AnalysisMetadata,
+    AnalysisResult,
+    LLMInsights,
+    TranscriptStructure,
+)
 from mcp_snapshot_server.prompts.system_prompts import SYSTEM_PROMPTS
 from mcp_snapshot_server.tools.nlp_utils import (
     analyze_transcript_structure,
@@ -20,7 +27,7 @@ from mcp_snapshot_server.utils.logging_config import ContextLogger
 from mcp_snapshot_server.utils.sampling import sample_llm
 
 
-class AnalysisAgent(BaseAgent):
+class AnalysisAgent(BaseAgent[AnalysisInput, AnalysisResult]):
     """Agent responsible for initial transcript analysis."""
 
     def __init__(self, logger: ContextLogger):
@@ -35,27 +42,18 @@ class AnalysisAgent(BaseAgent):
             logger=logger,
         )
 
-    async def process(self, input_data: dict[str, Any]) -> dict[str, Any]:
+    async def process(self, input_data: AnalysisInput) -> AnalysisResult:
         """Analyze transcript and extract structured information.
 
         Args:
-            input_data: Dictionary containing:
-                - transcript: Full transcript text
-                - transcript_data: Parsed transcript data (optional)
-                - additional_context: Additional context (optional)
+            input_data: AnalysisInput model containing transcript and context
 
         Returns:
-            Dictionary containing:
-                - entities: Extracted named entities by type
-                - topics: Key topics identified
-                - key_phrases: Important phrases
-                - structure: Conversation structure analysis
-                - data_availability: Assessment for each section
-                - metadata: Analysis metadata
+            AnalysisResult model with extracted information
         """
-        transcript = input_data["transcript"]
-        transcript_data = input_data.get("transcript_data", {})
-        additional_context = input_data.get("additional_context", "")
+        transcript = input_data.transcript
+        transcript_data = input_data.transcript_data
+        additional_context = input_data.additional_context
 
         self.logger.info(
             "Starting transcript analysis",
@@ -93,8 +91,8 @@ class AnalysisAgent(BaseAgent):
             key_phrases = []
 
         # Step 4: Analyze structure
-        structure = {}
-        if transcript_data:
+        structure = TranscriptStructure()
+        if transcript_data is not None:
             structure = analyze_transcript_structure(transcript_data)
 
         # Step 5: LLM-based deep analysis
@@ -116,18 +114,26 @@ class AnalysisAgent(BaseAgent):
             },
         )
 
-        return {
-            "entities": entities,
-            "topics": topics,
-            "key_phrases": key_phrases,
-            "structure": structure,
-            "llm_insights": llm_analysis,
-            "data_availability": data_availability,
-            "metadata": {
-                "analysis_method": "hybrid_nlp_llm",
-                "nlp_enabled": settings.nlp.extract_entities,
-            },
-        }
+        # Convert llm_analysis dict to LLMInsights model
+        llm_insights = LLMInsights(
+            entities=llm_analysis.get("entities", {}),
+            topics=llm_analysis.get("topics", []),
+            structure=llm_analysis.get("structure", {}),
+            data_availability=llm_analysis.get("data_availability", {}),
+        )
+
+        return AnalysisResult(
+            entities=entities,
+            topics=topics,
+            key_phrases=key_phrases,
+            structure=structure,
+            llm_insights=llm_insights,
+            data_availability=data_availability,
+            metadata=AnalysisMetadata(
+                analysis_method="hybrid_nlp_llm",
+                nlp_enabled=settings.nlp.extract_entities,
+            ),
+        )
 
     async def _llm_analysis(
         self,
@@ -207,7 +213,7 @@ OUTPUT: Valid JSON only, no additional text.
                 max_tokens=2000,
             )
 
-            content = response["content"]
+            content = response.content
 
             # Try to parse as JSON
             try:

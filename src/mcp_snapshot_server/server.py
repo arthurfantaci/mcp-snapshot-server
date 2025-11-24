@@ -27,6 +27,7 @@ from mcp.types import (
 )
 
 from mcp_snapshot_server.agents.orchestrator import OrchestrationAgent
+from mcp_snapshot_server.models import OrchestrationInput, SnapshotOutput
 from mcp_snapshot_server.prompts.field_definitions import (
     FIELD_DEFINITIONS,
     get_field_info,
@@ -50,6 +51,7 @@ class SnapshotMCPServer:
         self.orchestrator = OrchestrationAgent(logger=self.logger)
 
         # Storage for generated snapshots (in-memory for now)
+        # Values are SnapshotOutput models serialized to dict for JSON compatibility
         self.snapshots: dict[str, dict[str, Any]] = {}
 
         # Storage for uploaded transcripts (in-memory cache)
@@ -144,7 +146,7 @@ class SnapshotMCPServer:
                 extra={
                     "transcript_id": transcript_id,
                     "uri": transcript_uri,
-                    "speakers": len(parsed_data.get("speakers", [])),
+                    "speakers": len(parsed_data.speakers),
                     "vtt_filename": filename
                 }
             )
@@ -350,9 +352,13 @@ class SnapshotMCPServer:
                 }
 
             # Add speaker information
-            parsed_data = transcript_data.get("parsed_data", {})
-            transcript_info["speakers"] = parsed_data.get("speakers", [])
-            transcript_info["speaker_turns"] = len(parsed_data.get("speaker_turns", []))
+            parsed_data = transcript_data.get("parsed_data")
+            if parsed_data is not None:
+                transcript_info["speakers"] = parsed_data.speakers
+                transcript_info["speaker_turns"] = len(parsed_data.speaker_turns)
+            else:
+                transcript_info["speakers"] = []
+                transcript_info["speaker_turns"] = 0
 
             transcripts_list.append(transcript_info)
 
@@ -433,28 +439,40 @@ class SnapshotMCPServer:
         )
 
         try:
-            # Generate snapshot using orchestrator
-            result = await self.orchestrator.process({
-                "vtt_content": vtt_content,
-                "filename": filename
-            })
+            # Generate snapshot using orchestrator with typed input
+            orchestration_input = OrchestrationInput(
+                vtt_content=vtt_content,
+                filename=filename,
+            )
+            result = await self.orchestrator.process(orchestration_input)
+
+            # Handle both SnapshotOutput model and dict returns (for test compatibility)
+            if isinstance(result, SnapshotOutput):
+                result_dict = result.model_dump()
+                sections_count = len(result.sections)
+                avg_confidence = result.metadata.avg_confidence
+            else:
+                # Legacy dict format (from tests or older code)
+                result_dict = result
+                sections_count = len(result.get("sections", {}))
+                avg_confidence = result.get("metadata", {}).get("avg_confidence", 0)
 
             # Store snapshot for later access via Resources
             snapshot_id = Path(filename).stem
-            self.snapshots[snapshot_id] = result
+            self.snapshots[snapshot_id] = result_dict
 
             # Format output
             if output_format == "markdown":
-                content = self._format_as_markdown(result)
+                content = self._format_as_markdown(result_dict)
             else:
-                content = json.dumps(result, indent=2)
+                content = json.dumps(result_dict, indent=2)
 
             self.logger.info(
                 "Snapshot generated successfully",
                 extra={
                     "snapshot_id": snapshot_id,
-                    "sections": len(result["sections"]),
-                    "avg_confidence": result["metadata"]["avg_confidence"],
+                    "sections": sections_count,
+                    "avg_confidence": avg_confidence,
                 },
             )
 
@@ -666,12 +684,12 @@ class SnapshotMCPServer:
                     "meeting_id": meeting_id,
                     "transcript_id": transcript_id,
                     "uri": transcript_uri,
-                    "speakers": len(parsed_data.get("speakers", [])),
+                    "speakers": len(parsed_data.speakers),
                 },
             )
 
             # Extract transcript text for immediate use
-            transcript_text = parsed_data.get("text", "")
+            transcript_text = parsed_data.text
 
             # Build response with metadata
             response = {
@@ -680,9 +698,9 @@ class SnapshotMCPServer:
                 "meeting_id": meeting_id,
                 "topic": meeting_data.get("topic"),
                 "filename": filename,
-                "speakers": parsed_data.get("speakers", []),
-                "duration": parsed_data.get("duration", 0),
-                "speaker_turns": len(parsed_data.get("speaker_turns", [])),
+                "speakers": parsed_data.speakers,
+                "duration": parsed_data.duration,
+                "speaker_turns": len(parsed_data.speaker_turns),
             }
 
             # Return response with transcript text included
@@ -951,9 +969,9 @@ class SnapshotMCPServer:
             "transcript_id": transcript_id,
             "filename": transcript_data["filename"],
             # Full text is the primary content for LLM queries
-            "text": parsed_data.get("text", ""),
+            "text": parsed_data.text,
             # Include speakers for context
-            "speakers": parsed_data.get("speakers", []),
+            "speakers": parsed_data.speakers,
             # Add Zoom metadata if available
             "source": transcript_data.get("source"),
         }
@@ -964,9 +982,9 @@ class SnapshotMCPServer:
 
         # Include full parsed data for detailed analysis if needed
         response["parsed_data"] = {
-            "speaker_turns": parsed_data.get("speaker_turns", []),
-            "duration": parsed_data.get("duration", 0),
-            "metadata": parsed_data.get("metadata", {}),
+            "speaker_turns": [turn.model_dump() for turn in parsed_data.speaker_turns],
+            "duration": parsed_data.duration,
+            "metadata": parsed_data.metadata.model_dump(),
         }
 
         return json.dumps(response, indent=2)

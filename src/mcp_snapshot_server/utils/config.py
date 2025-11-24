@@ -4,9 +4,24 @@ This module provides comprehensive configuration settings for the entire applica
 organized into logical groups using Pydantic Settings.
 """
 
+import logging
+from typing import Self
 
-from pydantic import Field
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Valid logging levels
+VALID_LOG_LEVELS = {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}
+
+# Valid Claude models
+VALID_CLAUDE_MODELS = {
+    "claude-sonnet-4-20250514",
+    "claude-opus-4-20250514",
+    "claude-3-5-sonnet-20241022",
+}
+
+# Valid output formats
+VALID_OUTPUT_FORMATS = {"markdown", "json", "html"}
 
 
 class MCPServerSettings(BaseSettings):
@@ -26,6 +41,25 @@ class MCPServerSettings(BaseSettings):
     structured_logging: bool = Field(
         default=True, description="Enable structured JSON logging"
     )
+
+    @field_validator("log_level")
+    @classmethod
+    def validate_log_level(cls, v: str) -> str:
+        """Validate log level is a valid Python logging level."""
+        upper_v = v.upper()
+        if upper_v not in VALID_LOG_LEVELS:
+            raise ValueError(
+                f"Invalid log level '{v}'. Must be one of: {sorted(VALID_LOG_LEVELS)}"
+            )
+        return upper_v
+
+    @field_validator("server_name")
+    @classmethod
+    def validate_server_name(cls, v: str) -> str:
+        """Validate server name is not empty."""
+        if not v or not v.strip():
+            raise ValueError("Server name cannot be empty")
+        return v.strip()
 
 
 class LLMSettings(BaseSettings):
@@ -70,6 +104,26 @@ class LLMSettings(BaseSettings):
     max_retries: int = Field(
         default=3, ge=1, le=5, description="Maximum retry attempts"
     )
+
+    @field_validator("model")
+    @classmethod
+    def validate_model(cls, v: str) -> str:
+        """Validate model is a supported Claude model."""
+        if v not in VALID_CLAUDE_MODELS:
+            raise ValueError(
+                f"Invalid model '{v}'. Must be one of: {sorted(VALID_CLAUDE_MODELS)}"
+            )
+        return v
+
+    @field_validator("anthropic_api_key")
+    @classmethod
+    def validate_api_key_format(cls, v: str) -> str:
+        """Validate API key format if provided."""
+        if v and not v.startswith("sk-"):
+            logging.getLogger(__name__).warning(
+                "Anthropic API key format may be invalid (expected 'sk-' prefix)"
+            )
+        return v
 
 
 class WorkflowSettings(BaseSettings):
@@ -124,6 +178,17 @@ class WorkflowSettings(BaseSettings):
     include_confidence_scores: bool = Field(
         default=False, description="Include confidence scores in output"
     )
+
+    @field_validator("default_output_format")
+    @classmethod
+    def validate_output_format(cls, v: str) -> str:
+        """Validate output format is supported."""
+        lower_v = v.lower()
+        if lower_v not in VALID_OUTPUT_FORMATS:
+            raise ValueError(
+                f"Invalid output format '{v}'. Must be one of: {sorted(VALID_OUTPUT_FORMATS)}"
+            )
+        return lower_v
 
 
 class NLPSettings(BaseSettings):
@@ -201,6 +266,30 @@ class ZoomSettings(BaseSettings):
         description="Maximum number of cached recordings list entries",
     )
 
+    @model_validator(mode="after")
+    def validate_zoom_credentials(self) -> Self:
+        """Validate that if any Zoom credential is provided, all must be provided."""
+        creds_provided = any([self.account_id, self.client_id, self.client_secret])
+        creds_complete = all([self.account_id, self.client_id, self.client_secret])
+
+        if creds_provided and not creds_complete:
+            missing = []
+            if not self.account_id:
+                missing.append("ZOOM_ACCOUNT_ID")
+            if not self.client_id:
+                missing.append("ZOOM_CLIENT_ID")
+            if not self.client_secret:
+                missing.append("ZOOM_CLIENT_SECRET")
+            raise ValueError(
+                f"Incomplete Zoom credentials. Missing: {', '.join(missing)}"
+            )
+        return self
+
+    @property
+    def is_configured(self) -> bool:
+        """Check if Zoom credentials are fully configured."""
+        return all([self.account_id, self.client_id, self.client_secret])
+
 
 class DemoSettings(BaseSettings):
     """Demo mode configuration."""
@@ -219,7 +308,12 @@ class Settings:
     """Aggregated settings for the entire application."""
 
     def __init__(self) -> None:
-        """Initialize all settings groups."""
+        """Initialize all settings groups.
+
+        Note: Individual settings groups perform their own validation via
+        Pydantic field and model validators. This initialization will raise
+        ValidationError if any settings are invalid.
+        """
         self.server = MCPServerSettings()
         self.llm = LLMSettings()
         self.workflow = WorkflowSettings()
@@ -230,40 +324,30 @@ class Settings:
     def validate(self) -> bool:
         """Validate all settings.
 
+        This method performs additional cross-group validation that cannot
+        be done at the individual settings level.
+
         Returns:
             bool: True if all settings are valid
 
         Raises:
             ValueError: If any settings are invalid
         """
-        # Check required API keys
+        # Check required API keys (not validated at field level to allow empty default)
         if not self.llm.anthropic_api_key:
-            raise ValueError("ANTHROPIC_API_KEY is required")
-
-        # Validate model name
-        valid_models = [
-            "claude-sonnet-4-20250514",
-            "claude-opus-4-20250514",
-            "claude-3-5-sonnet-20241022",
-        ]
-        if self.llm.model not in valid_models:
-            raise ValueError(f"Invalid model. Must be one of: {valid_models}")
-
-        # Validate Zoom credentials (if any are provided, all must be provided)
-        zoom_creds_provided = any(
-            [self.zoom.account_id, self.zoom.client_id, self.zoom.client_secret]
-        )
-        zoom_creds_complete = all(
-            [self.zoom.account_id, self.zoom.client_id, self.zoom.client_secret]
-        )
-
-        if zoom_creds_provided and not zoom_creds_complete:
             raise ValueError(
-                "Incomplete Zoom credentials. If configuring Zoom, you must provide "
-                "ZOOM_ACCOUNT_ID, ZOOM_CLIENT_ID, and ZOOM_CLIENT_SECRET"
+                "LLM_ANTHROPIC_API_KEY (or ANTHROPIC_API_KEY) environment variable is required"
             )
 
+        # Note: Model validation is now handled by LLMSettings.validate_model()
+        # Note: Zoom credential validation is now handled by ZoomSettings.validate_zoom_credentials()
+
         return True
+
+    @property
+    def is_zoom_configured(self) -> bool:
+        """Check if Zoom integration is fully configured."""
+        return self.zoom.is_configured
 
 
 def get_settings() -> Settings:

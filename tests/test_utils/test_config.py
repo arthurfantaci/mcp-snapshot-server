@@ -1,6 +1,7 @@
 """Tests for configuration management."""
 
 import pytest
+from pydantic import ValidationError
 
 from mcp_snapshot_server.utils.config import (
     LLMSettings,
@@ -8,6 +9,7 @@ from mcp_snapshot_server.utils.config import (
     NLPSettings,
     Settings,
     WorkflowSettings,
+    ZoomSettings,
 )
 
 
@@ -32,6 +34,32 @@ class TestMCPServerSettings:
         assert settings.server_name == "custom-server"
         assert settings.log_level == "DEBUG"
 
+    def test_log_level_validation(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Test log level validation."""
+        # Valid levels should work (case insensitive)
+        for level in ["DEBUG", "debug", "Info", "WARNING", "ERROR", "CRITICAL"]:
+            monkeypatch.setenv("MCP_LOG_LEVEL", level)
+            settings = MCPServerSettings()
+            assert settings.log_level == level.upper()
+
+    def test_log_level_invalid(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Test invalid log level raises error."""
+        monkeypatch.setenv("MCP_LOG_LEVEL", "INVALID")
+        with pytest.raises(ValidationError, match="Invalid log level"):
+            MCPServerSettings()
+
+    def test_server_name_validation(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Test server name cannot be empty."""
+        monkeypatch.setenv("MCP_SERVER_NAME", "")
+        with pytest.raises(ValidationError, match="Server name cannot be empty"):
+            MCPServerSettings()
+
+    def test_server_name_strips_whitespace(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Test server name whitespace is stripped."""
+        monkeypatch.setenv("MCP_SERVER_NAME", "  my-server  ")
+        settings = MCPServerSettings()
+        assert settings.server_name == "my-server"
+
 
 @pytest.mark.unit
 class TestLLMSettings:
@@ -42,8 +70,11 @@ class TestLLMSettings:
         settings = LLMSettings()
         assert settings.anthropic_api_key == "test-api-key-12345"
 
-    def test_default_api_key_is_empty(self) -> None:
-        """Test that API key defaults to empty string."""
+    def test_default_api_key_is_empty(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Test that API key defaults to empty string when not in environment."""
+        # Set to empty string to override any .env file values
+        # (delenv doesn't work because .env file takes precedence after env vars)
+        monkeypatch.setenv("LLM_ANTHROPIC_API_KEY", "")
         settings = LLMSettings()
         assert settings.anthropic_api_key == ""
 
@@ -98,6 +129,20 @@ class TestWorkflowSettings:
         with pytest.raises(Exception):  # Pydantic ValidationError
             WorkflowSettings()
 
+    def test_output_format_validation(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Test output format validation."""
+        # Valid formats (case insensitive)
+        for fmt in ["markdown", "json", "html", "MARKDOWN", "Json"]:
+            monkeypatch.setenv("WORKFLOW_DEFAULT_OUTPUT_FORMAT", fmt)
+            settings = WorkflowSettings()
+            assert settings.default_output_format == fmt.lower()
+
+    def test_output_format_invalid(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Test invalid output format raises error."""
+        monkeypatch.setenv("WORKFLOW_DEFAULT_OUTPUT_FORMAT", "pdf")
+        with pytest.raises(ValidationError, match="Invalid output format"):
+            WorkflowSettings()
+
 
 @pytest.mark.unit
 class TestNLPSettings:
@@ -135,21 +180,23 @@ class TestSettings:
         settings = Settings()
         settings.llm.anthropic_api_key = ""
 
-        with pytest.raises(ValueError, match="ANTHROPIC_API_KEY is required"):
+        with pytest.raises(ValueError, match="LLM_ANTHROPIC_API_KEY"):
             settings.validate()
 
-    def test_validate_invalid_model(self, test_env_vars: None) -> None:
-        """Test validation fails with invalid model."""
-        settings = Settings()
-        settings.llm.model = "invalid-model"
+    def test_validate_invalid_model(
+        self, test_env_vars: None, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Test validation fails with invalid model at instantiation time."""
+        # Model validation now happens at field level via @field_validator
+        monkeypatch.setenv("LLM_MODEL", "invalid-model")
 
-        with pytest.raises(ValueError, match="Invalid model"):
-            settings.validate()
+        with pytest.raises(Exception, match="Invalid model"):
+            LLMSettings()
 
-    def test_validate_valid_models(self, test_env_vars: None) -> None:
+    def test_validate_valid_models(
+        self, test_env_vars: None, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Test validation succeeds with valid models."""
-        settings = Settings()
-
         valid_models = [
             "claude-sonnet-4-20250514",
             "claude-opus-4-20250514",
@@ -157,5 +204,67 @@ class TestSettings:
         ]
 
         for model in valid_models:
-            settings.llm.model = model
-            assert settings.validate() is True
+            # Model validation happens at instantiation time via @field_validator
+            monkeypatch.setenv("LLM_MODEL", model)
+            settings = LLMSettings()
+            assert settings.model == model
+
+
+@pytest.mark.unit
+class TestZoomSettings:
+    """Tests for Zoom settings validation."""
+
+    def test_default_values(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Test default Zoom settings when environment is clear."""
+        # Set to empty strings to override any .env file values
+        monkeypatch.setenv("ZOOM_ACCOUNT_ID", "")
+        monkeypatch.setenv("ZOOM_CLIENT_ID", "")
+        monkeypatch.setenv("ZOOM_CLIENT_SECRET", "")
+        settings = ZoomSettings()
+        assert settings.account_id == ""
+        assert settings.client_id == ""
+        assert settings.client_secret == ""
+        assert settings.default_user_id == "me"
+        assert settings.api_timeout == 30
+        assert settings.max_retries == 3
+
+    def test_complete_credentials(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Test that complete credentials are valid."""
+        monkeypatch.setenv("ZOOM_ACCOUNT_ID", "test-account")
+        monkeypatch.setenv("ZOOM_CLIENT_ID", "test-client")
+        monkeypatch.setenv("ZOOM_CLIENT_SECRET", "test-secret")
+
+        settings = ZoomSettings()
+        assert settings.is_configured is True
+
+    def test_incomplete_credentials_raises_error(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Test that partial credentials raise validation error."""
+        # Only account_id provided
+        monkeypatch.setenv("ZOOM_ACCOUNT_ID", "test-account")
+        monkeypatch.setenv("ZOOM_CLIENT_ID", "")
+        monkeypatch.setenv("ZOOM_CLIENT_SECRET", "")
+
+        with pytest.raises(ValidationError, match="Incomplete Zoom credentials"):
+            ZoomSettings()
+
+    def test_no_credentials_is_valid(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Test that no credentials at all is valid (Zoom is optional)."""
+        monkeypatch.setenv("ZOOM_ACCOUNT_ID", "")
+        monkeypatch.setenv("ZOOM_CLIENT_ID", "")
+        monkeypatch.setenv("ZOOM_CLIENT_SECRET", "")
+
+        settings = ZoomSettings()
+        assert settings.is_configured is False
+
+    def test_is_zoom_configured_property(
+        self, test_env_vars: None, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Test Settings.is_zoom_configured property."""
+        # Set to empty strings to override any .env file values
+        monkeypatch.setenv("ZOOM_ACCOUNT_ID", "")
+        monkeypatch.setenv("ZOOM_CLIENT_ID", "")
+        monkeypatch.setenv("ZOOM_CLIENT_SECRET", "")
+        settings = Settings()
+        assert settings.is_zoom_configured is False

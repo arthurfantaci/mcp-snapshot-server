@@ -3,6 +3,7 @@
 import pytest
 
 from mcp_snapshot_server.agents.validator import ValidationAgent
+from mcp_snapshot_server.models.validation import ValidationInput, ValidationResult
 from mcp_snapshot_server.utils.logging_config import ContextLogger
 
 
@@ -70,29 +71,29 @@ class TestValidationAgent:
     @pytest.mark.asyncio
     async def test_process_valid_sections(self, validator_agent, sample_sections):
         """Test validation of valid sections."""
-        result = await validator_agent.process({"sections": sample_sections})
+        input_data = ValidationInput(sections=sample_sections)
+        result = await validator_agent.process(input_data)
 
-        assert isinstance(result, dict)
-        assert "issues" in result
-        assert "factual_consistency" in result
-        assert "completeness" in result
-        assert "quality" in result
-        assert "requires_improvements" in result
-        assert isinstance(result["issues"], list)
+        assert isinstance(result, ValidationResult)
+        assert isinstance(result.issues, list)
+        assert isinstance(result.factual_consistency, bool)
+        assert isinstance(result.completeness, bool)
+        assert isinstance(result.quality, bool)
+        assert isinstance(result.requires_improvements, bool)
 
     @pytest.mark.asyncio
     async def test_process_sections_with_issues(
         self, validator_agent, sections_with_issues
     ):
         """Test validation of sections with issues."""
-        result = await validator_agent.process({"sections": sections_with_issues})
+        input_data = ValidationInput(sections=sections_with_issues)
+        result = await validator_agent.process(input_data)
 
-        assert isinstance(result, dict)
-        assert "issues" in result
+        assert isinstance(result, ValidationResult)
         # Should detect issues from heuristic validation
-        assert len(result["issues"]) > 0
+        assert len(result.issues) > 0
         # Should require improvements
-        assert result.get("requires_improvements", False) is True
+        assert result.requires_improvements is True
 
     def test_build_sections_text(self, validator_agent, sample_sections):
         """Test building sections text."""
@@ -242,12 +243,13 @@ No problems found
             llm_results, heuristic_results
         )
 
-        assert merged["factual_consistency"] is True
-        assert merged["completeness"] is False
-        assert merged["quality"] is True
+        assert isinstance(merged, ValidationResult)
+        assert merged.factual_consistency is True
+        assert merged.completeness is False
+        assert merged.quality is True
         # Issues should be combined
-        assert len(merged["issues"]) == 3  # 1 from LLM + 2 from heuristic
-        assert merged["requires_improvements"] is True
+        assert len(merged.issues) == 3  # 1 from LLM + 2 from heuristic
+        assert merged.requires_improvements is True
 
     def test_merge_validation_results_heuristic_triggers_improvement(
         self, validator_agent
@@ -271,5 +273,6 @@ No problems found
             llm_results, heuristic_results
         )
 
+        assert isinstance(merged, ValidationResult)
         # Should require improvements because heuristic found issues
-        assert merged["requires_improvements"] is True
+        assert merged.requires_improvements is True

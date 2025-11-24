@@ -85,7 +85,12 @@ class TestToolsPrimitive:
         """Test listing available tools."""
         tools = await mcp_server._list_tools()
 
-        assert len(tools) == 4
+        assert len(tools) == 5
+
+        # Check list_cached_transcripts tool
+        cached_tool = next(t for t in tools if t.name == "list_cached_transcripts")
+        assert "cached" in cached_tool.description.lower()
+        assert "transcript" in cached_tool.description.lower()
 
         # Check list_zoom_recordings tool
         list_tool = next(t for t in tools if t.name == "list_zoom_recordings")
@@ -427,6 +432,11 @@ class TestResourcesPrimitive:
     ):
         """Test that Zoom transcripts appear in resources with proper metadata."""
         from mcp_snapshot_server.tools.transcript_utils import parse_vtt_content
+
+        # Clear any demo transcripts that may have been loaded (e.g., when DEMO_MODE=true)
+        demo_keys = [k for k in mcp_server.transcripts if "demo" in k]
+        for key in demo_keys:
+            del mcp_server.transcripts[key]
 
         # Cache a Zoom transcript
         parsed_data = parse_vtt_content(sample_vtt_content, "zoom_123.vtt")

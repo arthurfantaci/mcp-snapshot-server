@@ -8,12 +8,18 @@ import re
 from typing import Any
 
 from mcp_snapshot_server.agents.base import BaseAgent
+from mcp_snapshot_server.models.analysis import AnalysisResult
+from mcp_snapshot_server.models.sections import (
+    SectionGeneratorInput,
+    SectionMetadata,
+    SectionResult,
+)
 from mcp_snapshot_server.utils.config import get_settings
 from mcp_snapshot_server.utils.logging_config import ContextLogger
 from mcp_snapshot_server.utils.sampling import sample_llm
 
 
-class SectionGeneratorAgent(BaseAgent):
+class SectionGeneratorAgent(BaseAgent[SectionGeneratorInput, SectionResult]):
     """Agent responsible for generating individual sections."""
 
     def __init__(
@@ -39,38 +45,35 @@ class SectionGeneratorAgent(BaseAgent):
         self.section_name = section_name
         self.prompt_template = prompt_template
 
-    async def process(self, input_data: dict[str, Any]) -> dict[str, Any]:
+    async def process(self, input_data: SectionGeneratorInput) -> SectionResult:
         """Generate section content.
 
         Args:
-            input_data: Dictionary containing:
-                - transcript: Full transcript text
-                - analysis: Analysis results (optional)
-                - context: Additional context (optional)
+            input_data: SectionGeneratorInput containing transcript, analysis, and context
 
         Returns:
-            Dictionary containing:
-                - section_name: Name of the section
-                - content: Generated content
-                - confidence: Confidence score (0.0-1.0)
-                - missing_fields: List of missing field identifiers
-                - metadata: Generation metadata
+            SectionResult with generated content, confidence, and metadata
         """
-        transcript = input_data["transcript"]
-        analysis = input_data.get("analysis", {})
-        context = input_data.get("context", {})
+        transcript = input_data.transcript
+        # Handle analysis as either AnalysisResult model or dict
+        analysis = input_data.analysis
+        if isinstance(analysis, AnalysisResult):
+            analysis_dict = analysis.model_dump()
+        else:
+            analysis_dict = analysis if analysis else {}
+        context = input_data.context
 
         self.logger.info(
             f"Generating section: {self.section_name}",
             extra={
                 "section": self.section_name,
-                "entities_available": len(analysis.get("entities", {})),
-                "topics_available": len(analysis.get("topics", [])),
+                "entities_available": len(analysis_dict.get("entities", {})),
+                "topics_available": len(analysis_dict.get("topics", [])),
             },
         )
 
         # Build section prompt
-        prompt = self._build_prompt(transcript, analysis, context)
+        prompt = self._build_prompt(transcript, analysis_dict, context)
 
         # Sample LLM
         settings = get_settings()
@@ -81,10 +84,10 @@ class SectionGeneratorAgent(BaseAgent):
             max_tokens=settings.llm.max_tokens_per_section,
         )
 
-        content = response["content"]
+        content = response.content
 
         # Calculate confidence
-        confidence = self._calculate_confidence(content, analysis)
+        confidence = self._calculate_confidence(content, analysis_dict)
 
         # Identify missing fields
         missing_fields = self._identify_missing_fields(content)
@@ -99,13 +102,20 @@ class SectionGeneratorAgent(BaseAgent):
             },
         )
 
-        return {
-            "section_name": self.section_name,
-            "content": content,
-            "confidence": confidence,
-            "missing_fields": missing_fields,
-            "metadata": response.get("metadata", {}),
-        }
+        # Build metadata from response
+        metadata = SectionMetadata(
+            model=response.metadata.model,
+            tokens_used=response.metadata.tokens_used.model_dump(),
+            finish_reason=response.metadata.finish_reason,
+        )
+
+        return SectionResult(
+            section_name=self.section_name,
+            content=content,
+            confidence=confidence,
+            missing_fields=missing_fields,
+            metadata=metadata,
+        )
 
     def _build_prompt(
         self,

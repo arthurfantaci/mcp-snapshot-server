@@ -6,8 +6,9 @@ and identifying key topics using NLTK from meeting transcripts.
 
 import logging
 from collections import Counter
-from typing import Any
 
+from mcp_snapshot_server.models.analysis import TranscriptStructure
+from mcp_snapshot_server.models.transcript import TranscriptData
 from mcp_snapshot_server.utils.config import get_settings
 from mcp_snapshot_server.utils.errors import ErrorCode, MCPServerError
 
@@ -214,26 +215,26 @@ def extract_key_phrases(text: str, top_n: int = 15) -> list[str]:
         return []
 
 
-def analyze_transcript_structure(transcript_data: dict[str, Any]) -> dict[str, Any]:
+def analyze_transcript_structure(transcript_data: TranscriptData) -> TranscriptStructure:
     """Analyze the structure of a transcript.
 
     Args:
-        transcript_data: Parsed transcript data
+        transcript_data: Parsed TranscriptData model
 
     Returns:
-        Dictionary with structural analysis
+        TranscriptStructure model with structural analysis
     """
-    speakers = transcript_data.get("speakers", [])
-    turns = transcript_data.get("speaker_turns", [])
-    duration = transcript_data.get("duration", 0)
+    speakers = transcript_data.speakers
+    turns = transcript_data.speaker_turns
+    duration = transcript_data.duration
 
     # Count turns per speaker
     speaker_turns_count: dict[str, int] = {}
     speaker_word_count: dict[str, int] = {}
 
     for turn in turns:
-        speaker = turn.get("speaker", "Unknown")
-        text = turn.get("text", "")
+        speaker = turn.speaker
+        text = turn.text
 
         speaker_turns_count[speaker] = speaker_turns_count.get(speaker, 0) + 1
         word_count = len(text.split())
@@ -249,22 +250,23 @@ def analyze_transcript_structure(transcript_data: dict[str, Any]) -> dict[str, A
         meeting_type = "large_group"
 
     # Check for specific patterns
-    text = transcript_data.get("text", "").lower()
-    if "kickoff" in text or "introduction" in text:
+    text_lower = transcript_data.text.lower()
+    if "kickoff" in text_lower or "introduction" in text_lower:
         meeting_type = "kickoff"
-    elif "review" in text or "retrospective" in text:
+    elif "review" in text_lower or "retrospective" in text_lower:
         meeting_type = "review"
 
-    return {
-        "meeting_type": meeting_type,
-        "speaker_count": len(speakers),
-        "total_turns": len(turns),
-        "duration_seconds": duration,
-        "speaker_turns_count": speaker_turns_count,
-        "speaker_word_count": speaker_word_count,
-        "avg_turn_length": (
-            sum(len(t.get("text", "").split()) for t in turns) / len(turns)
-            if turns
-            else 0
-        ),
-    }
+    # Calculate average turn length
+    avg_turn_length = (
+        sum(len(t.text.split()) for t in turns) / len(turns) if turns else 0.0
+    )
+
+    return TranscriptStructure(
+        meeting_type=meeting_type,
+        speaker_count=len(speakers),
+        total_turns=len(turns),
+        duration_seconds=duration,
+        speaker_turns_count=speaker_turns_count,
+        speaker_word_count=speaker_word_count,
+        avg_turn_length=avg_turn_length,
+    )

@@ -4,13 +4,27 @@ This module provides the abstract base class that all specialized agents inherit
 """
 
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Generic, TypeVar
+
+from pydantic import BaseModel
 
 from mcp_snapshot_server.utils.logging_config import ContextLogger
 
+# Type variables for generic agent input/output
+InputT = TypeVar("InputT", bound=BaseModel)
+OutputT = TypeVar("OutputT", bound=BaseModel)
 
-class BaseAgent(ABC):
-    """Abstract base class for all agents in the system."""
+
+class BaseAgent(ABC, Generic[InputT, OutputT]):
+    """Abstract base class for all agents in the system.
+
+    This class is generic over input and output types, allowing concrete
+    implementations to specify their exact input/output Pydantic models.
+
+    Type Parameters:
+        InputT: The Pydantic model type for input data
+        OutputT: The Pydantic model type for output data
+    """
 
     def __init__(self, name: str, system_prompt: str, logger: ContextLogger):
         """Initialize base agent.
@@ -25,15 +39,15 @@ class BaseAgent(ABC):
         self.logger = logger
 
     @abstractmethod
-    async def process(self, input_data: dict[str, Any]) -> dict[str, Any]:
+    async def process(self, input_data: InputT) -> OutputT:
         """Process input and return results.
 
         This method must be implemented by all concrete agent classes.
 
         Args:
-            input_data: Input data for processing
+            input_data: Pydantic model containing input data for processing
 
         Returns:
-            Processing results with metadata
+            Pydantic model containing processing results with metadata
         """
         pass

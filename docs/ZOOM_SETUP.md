@@ -50,16 +50,19 @@ This guide walks you through setting up Zoom API integration for the MCP Snapsho
 After creating your app, you'll see the **App Credentials** page with three critical pieces of information:
 
 ### Account ID
+
 - Located at the top of the credentials page
 - Format: `abc123XYZ...`
 - Copy this value - you'll need it for `ZOOM_ACCOUNT_ID`
 
 ### Client ID
+
 - Listed as "Client ID" on the credentials page
 - Format: Alphanumeric string
 - Copy this value - you'll need it for `ZOOM_CLIENT_ID`
 
 ### Client Secret
+
 - Listed as "Client Secret" on the credentials page
 - Click **Copy** to copy the secret
 - ⚠️ **IMPORTANT**: Store this securely - it won't be shown again
@@ -82,21 +85,45 @@ Add the following scopes one at a time:
 
 | Scope | Description | Why It's Needed |
 |-------|-------------|-----------------|
-| `recording:read:admin` | View all user recordings | Required to access meeting recordings |
-| `cloud_recording:read:list_user_recordings:admin` | List user recordings | Required to list recordings by date |
-| `cloud_recording:read:list_recording_files:admin` | View recording files | **Required to download transcript files** |
-| `cloud_recording:read:list_recording_files` | View recording files | **Required to access individual recording files** |
-| `user:read:user:admin` | Read user information | Required for user context |
-| `user:read:list_users:admin` | List users | Required for multi-user support |
+| `cloud_recording:read:list_user_recordings:admin` | List all cloud recordings for a user | Required to list recordings by date |
+| `cloud_recording:read:list_recording_files:admin` | Returns all of a meeting's recordings | **Required to download transcript files** |
+| `cloud_recording:read:recording:admin` | View a recording | **Required to access individual recording files** |
+| `user:read:user:admin` | View a user | Required for user context |
+| `user:read:list_users:admin` | View users | Required for multi-user support |
 
-⚠️ **IMPORTANT**: The two `cloud_recording:read:list_recording_files` scopes are **critical** for downloading transcripts. Without these, you'll get a "Missing required scopes" error when attempting to download.
+⚠️ **IMPORTANT**: The `cloud_recording:read:list_recording_files` scope is **critical** for downloading transcripts. Without it, you'll get a "Missing required scopes" error when attempting to download.
 
-### Step 3: Save Scopes
+### Step 3: Scope Description
+
+1. Insert the following (or create your own description):
+
+```text
+This application generates Customer Success Snapshots from Zoom meeting transcripts using AI analysis.
+
+DATA USAGE:
+- Lists cloud recordings to identify meetings with available transcripts
+- Downloads VTT transcript files for processing
+- Reads user information for authentication context only
+
+DATA STORAGE:
+- Transcript content is cached temporarily in memory (15-minute TTL) for processing
+- NO data is stored permanently on disk
+- NO recordings or transcripts are persisted after processing
+- Cache is cleared automatically after 15 minutes
+- All data remains in memory only during active processing sessions
+
+SECURITY:
+- Server-to-Server OAuth authentication
+- No long-term storage of meeting content
+- No database or file system persistence of recordings/transcripts
+```
+
+### Step 4: Save Scopes
 
 1. After adding all scopes, click **Done**
 2. Click **Continue** at the bottom of the page
 
-### Step 4: Activation
+### Step 5: Activation
 
 1. In the **Activation** tab, toggle the **Activate your app** button to **ON**
 2. Your app is now active and ready to use
@@ -168,7 +195,8 @@ uv run python -m mcp_snapshot_server.server
 ```
 
 If credentials are missing or incomplete, you'll see an error like:
-```
+
+```text
 ValueError: Incomplete Zoom credentials. If configuring Zoom, you must provide ZOOM_ACCOUNT_ID, ZOOM_CLIENT_ID, and ZOOM_CLIENT_SECRET
 ```
 
@@ -176,7 +204,7 @@ ValueError: Incomplete Zoom credentials. If configuring Zoom, you must provide Z
 
 Use the MCP client or Claude Desktop to test the Zoom integration:
 
-```
+```python
 # List your Zoom recordings
 list_zoom_recordings
 
@@ -189,20 +217,22 @@ list_zoom_recordings(search_query="customer")
 
 ### Step 3: Fetch a Transcript
 
-```
+```python
 # Get the meeting_id from list_zoom_recordings output
 fetch_zoom_transcript(meeting_id="123456789")
 # Returns: transcript://abc123
 ```
 
 This fetches the transcript from Zoom and caches it in server memory. The returned URI can be used for:
+
 - Generating snapshots
 - Querying directly in your conversations
 
 ### Step 4: Use the Transcript
 
-**Option A: Generate a Snapshot**
-```
+#### Option A: Generate a Snapshot
+
+```python
 # Single-step: Fetch and generate snapshot
 generate_snapshot_from_zoom(meeting_id="123456789", output_format="markdown")
 
@@ -212,8 +242,9 @@ generate_snapshot_from_zoom(meeting_id="123456789", output_format="markdown")
 2. generate_customer_snapshot(transcript_uri="transcript://abc123", output_format="json")
 ```
 
-**Option B: Query Directly**
-```
+#### Option B: Query Directly
+
+```text
 # After fetching, you can ask questions about the transcript
 "What were the main concerns raised in transcript://abc123?"
 "Who attended the meeting in transcript://abc123?"
@@ -231,11 +262,14 @@ The transcript is exposed as an MCP Resource, allowing Claude to read and analyz
 **Problem**: The server can't find your Zoom credentials.
 
 **Solution**:
+
 1. Verify your `.env` file exists in the project root
 2. Check that all three credentials are set:
+
    ```bash
    grep ZOOM_ .env
    ```
+
 3. Ensure no extra spaces or quotes around the values
 4. Restart the server after updating `.env`
 
@@ -244,6 +278,7 @@ The transcript is exposed as an MCP Resource, allowing Claude to read and analyz
 **Problem**: The credentials are invalid or the app is not activated.
 
 **Solution**:
+
 1. Double-check your credentials in the Zoom Marketplace
 2. Verify your app is **Activated** in the Activation tab
 3. Regenerate Client Secret if needed (in App Credentials tab)
@@ -254,6 +289,7 @@ The transcript is exposed as an MCP Resource, allowing Claude to read and analyz
 **Problem**: The meeting doesn't have a transcript available.
 
 **Solution**:
+
 1. **Check if transcript feature is enabled**:
    - Go to Zoom Settings → Recording
    - Enable "Audio transcript" setting
@@ -269,6 +305,7 @@ The transcript is exposed as an MCP Resource, allowing Claude to read and analyz
 **Problem**: Zoom is still generating the transcript.
 
 **Solution**:
+
 - Wait and try again later (transcripts typically process within 2x meeting duration)
 - Check the recording in Zoom web interface to see processing status
 
@@ -277,12 +314,14 @@ The transcript is exposed as an MCP Resource, allowing Claude to read and analyz
 **Problem**: Your OAuth app doesn't have the necessary permissions to access recording files.
 
 **Error Details**:
-```
+
+```text
 Zoom API error 400 (code: 124): Access token does not contain scopes:
 [cloud_recording:read:list_recording_files, cloud_recording:read:list_recording_files:admin]
 ```
 
 **Solution**:
+
 1. Go to [Zoom Marketplace](https://marketplace.zoom.us/)
 2. Navigate to **Develop** → **Build App** → select your app
 3. Click on the **Scopes** tab
@@ -299,6 +338,7 @@ Zoom API error 400 (code: 124): Access token does not contain scopes:
 **Problem**: Insufficient permissions or invalid authentication.
 
 **Solution**:
+
 1. Verify all required scopes are added to your app (see table above)
 2. Check that your app is activated
 3. Regenerate your Client Secret and update `.env`
@@ -310,11 +350,13 @@ Zoom API error 400 (code: 124): Access token does not contain scopes:
 **Problem**: No recordings found in the specified date range.
 
 **Solution**:
+
 1. Verify meetings were recorded to the cloud (not locally)
 2. Check the date range covers when meetings occurred
 3. Ensure "Audio transcript" was enabled during the meetings
 4. Try expanding the date range:
-   ```
+
+   ```python
    list_zoom_recordings(from_date="2024-01-01", to_date="2024-12-31")
    ```
 
@@ -323,12 +365,15 @@ Zoom API error 400 (code: 124): Access token does not contain scopes:
 **Problem**: Recordings list shows old data.
 
 **Solution**:
+
 - Wait for cache to expire (15 minutes by default)
 - OR adjust `ZOOM_CACHE_TTL_SECONDS` in `.env`:
+
   ```bash
   ZOOM_CACHE_TTL_SECONDS=0  # Disable caching
   ZOOM_CACHE_TTL_SECONDS=300  # 5 minutes
   ```
+
 - Restart the server after changing cache settings
 
 ---
@@ -341,11 +386,13 @@ Zoom API has rate limits to prevent abuse:
 - **Daily quota**: Typically sufficient for normal use
 
 The MCP Snapshot Server implements:
+
 - Automatic retry with exponential backoff
 - 15-minute caching to minimize API calls
 - Configurable retry attempts
 
 If you hit rate limits:
+
 1. Increase `ZOOM_CACHE_TTL_SECONDS` to cache longer
 2. Reduce frequency of `list_zoom_recordings` calls
 3. Contact Zoom to increase your rate limit
@@ -357,6 +404,7 @@ If you hit rate limits:
 **Current Limitation**: Zoom currently only provides English transcripts.
 
 If your meetings are in other languages:
+
 - Transcripts may be incomplete or unavailable
 - Consider Zoom's roadmap for multi-language support
 - Alternative: Use third-party transcription services
