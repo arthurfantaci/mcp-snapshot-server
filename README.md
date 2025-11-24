@@ -198,23 +198,35 @@ graph TD
 
 4. **Use in conversation**:
 
+**Quick Insights from Meetings:**
 ```
-# List my recent Zoom recordings with transcripts
-list_zoom_recordings
+Show me my Zoom recordings from last week
 
-# Search for specific recordings
-list_zoom_recordings with topic containing "customer"
+I need the transcript from meeting ID 82334715928
 
-# Fetch and generate snapshot in one step
-generate_snapshot_from_zoom for meeting ID 123456789
+What were the main concerns the customer raised?
 
-# OR: Fetch transcript to query it directly
-fetch_zoom_transcript meeting_id="123456789"
-# Returns: transcript://abc789
+Who was the decision maker in this conversation?
 
-# Now ask questions about it
-What pain points were discussed in transcript://abc789?
-Who were the key attendees in that meeting?
+Can you summarize the key action items?
+```
+
+**Generate Formal Documentation:**
+```
+Generate a customer success snapshot from my meeting with Acme Corp (ID: 82334715928)
+
+I need a markdown version of the snapshot for this transcript
+
+Create a case study from yesterday's customer call
+```
+
+**Search and Filter:**
+```
+Find all my recordings that mention "pricing" or "budget"
+
+Show me customer feedback calls from November
+
+Which meetings discussed product feature requests?
 ```
 
 See [CLAUDE_DESKTOP.md](CLAUDE_DESKTOP.md) for detailed integration guide.
