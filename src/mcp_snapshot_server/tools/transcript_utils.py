@@ -133,7 +133,7 @@ def parse_vtt_content(vtt_content: str, filename: str = "transcript.vtt") -> dic
         raise MCPServerError(
             message="VTT content is empty",
             error_code=ErrorCode.INVALID_INPUT,
-            details={"filename": filename},
+            details={"vtt_filename": filename},
         )
 
     # Validate that content starts with WEBVTT header
@@ -141,7 +141,7 @@ def parse_vtt_content(vtt_content: str, filename: str = "transcript.vtt") -> dic
         raise MCPServerError(
             message="Invalid VTT format: content must start with 'WEBVTT'",
             error_code=ErrorCode.INVALID_INPUT,
-            details={"filename": filename, "first_line": vtt_content.split("\n")[0]},
+            details={"vtt_filename": filename, "first_line": vtt_content.split("\n")[0]},
         )
 
     try:
@@ -205,7 +205,7 @@ def parse_vtt_content(vtt_content: str, filename: str = "transcript.vtt") -> dic
         logger.info(
             "Successfully parsed VTT content",
             extra={
-                "filename": filename,
+                "vtt_filename": filename,
                 "speakers_count": len(speakers),
                 "turns_count": len(speaker_turns),
                 "duration_seconds": duration,
@@ -219,7 +219,7 @@ def parse_vtt_content(vtt_content: str, filename: str = "transcript.vtt") -> dic
             "speaker_turns": speaker_turns,
             "duration": duration,
             "metadata": {
-                "filename": filename,
+                "vtt_filename": filename,
                 "caption_count": len(vtt_data.captions),
                 "speaker_count": len(speakers),
             },
@@ -229,7 +229,7 @@ def parse_vtt_content(vtt_content: str, filename: str = "transcript.vtt") -> dic
         raise MCPServerError(
             message=f"Invalid VTT format: {str(e)}",
             error_code=ErrorCode.PARSE_ERROR,
-            details={"filename": filename, "parse_error": str(e)},
+            details={"vtt_filename": filename, "parse_error": str(e)},
         ) from e
 
     except MCPServerError:
@@ -240,7 +240,7 @@ def parse_vtt_content(vtt_content: str, filename: str = "transcript.vtt") -> dic
         raise MCPServerError(
             message=f"Failed to parse VTT content: {str(e)}",
             error_code=ErrorCode.INTERNAL_ERROR,
-            details={"filename": filename, "error_type": type(e).__name__},
+            details={"vtt_filename": filename, "error_type": type(e).__name__},
         ) from e
 
 

@@ -14,7 +14,7 @@ Complete API reference for the MCP Snapshot Server.
 
 The server implements all 6 Model Context Protocol primitives:
 
-1. **Tools** - 4 tools for Zoom integration and snapshot generation
+1. **Tools** - 5 tools for transcript management, Zoom integration, and snapshot generation
 2. **Resources** - Transcripts, snapshots, sections, and field definitions
 3. **Prompts** - 11 section prompts + field elicitation prompts
 4. **Sampling** - Claude AI integration with retry logic and confidence scoring
@@ -22,6 +22,53 @@ The server implements all 6 Model Context Protocol primitives:
 6. **Logging** - Structured JSON logging with full traceability
 
 ## Tools
+
+### list_cached_transcripts
+
+List all transcripts currently cached in server memory. This includes demo transcripts (when DEMO_MODE is enabled) and any transcripts previously fetched from Zoom.
+
+**Input Schema:**
+```json
+{
+  "type": "object",
+  "properties": {}
+}
+```
+
+**Output:**
+Returns list of cached transcripts with metadata:
+- `transcript_id`: Unique identifier
+- `uri`: transcript://[id] for use with generate_customer_snapshot
+- `filename`: Original file name
+- `source`: "demo", "zoom", or other source
+- `metadata`: Source-specific metadata (topic, speakers, duration, etc.)
+- `speakers`: List of speaker names
+- `speaker_turns`: Number of speaking turns
+
+**Example:**
+```json
+{
+  "cached_transcripts": [
+    {
+      "transcript_id": "quest-enterprises-demo",
+      "uri": "transcript://quest-enterprises-demo",
+      "filename": "quest_enterprises_project_kickoff_transcript.vtt",
+      "source": "demo",
+      "metadata": {
+        "topic": "Quest Enterprises - Quiznos Analytics Professional Services Engagement Kickoff",
+        "start_time": "2024-07-14T09:00:00Z",
+        "duration": 4113,
+        "description": "Demo transcript for testing and demonstrations"
+      },
+      "speakers": ["Bob Jones", "Franklin Dorsey"],
+      "speaker_turns": 133
+    }
+  ],
+  "total_count": 1
+}
+```
+
+---
 
 ### list_zoom_recordings
 

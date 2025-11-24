@@ -57,7 +57,7 @@ MCP Snapshot Server is a production-ready Model Context Protocol (MCP) server th
 
 ### Technical Highlights
 
-✅ **Tools** - 4 specialized tools for Zoom integration and snapshot generation
+✅ **Tools** - 5 specialized tools for transcript management, Zoom integration, and snapshot generation
 ✅ **Resources** - Transcripts, snapshots, sections, and field definitions exposed as MCP Resources
 ✅ **Prompts** - 11 section-specific prompts + field elicitation for completeness
 ✅ **Sampling** - Integrated Claude AI with retry logic and confidence scoring
@@ -363,10 +363,11 @@ Complete 11-Section Snapshot with confidence scores
 
 ### Available Tools
 
-1. **`list_zoom_recordings`** - List and search Zoom recordings with transcripts
-2. **`fetch_zoom_transcript`** - Fetch & cache transcript (returns full text + URI)
-3. **`generate_customer_snapshot`** - Generate full snapshot from cached transcript URI
-4. **`generate_snapshot_from_zoom`** - One-step: fetch + generate full snapshot
+1. **`list_cached_transcripts`** - List all transcripts in server memory (includes demo transcripts)
+2. **`list_zoom_recordings`** - List and search Zoom cloud recordings with transcripts
+3. **`fetch_zoom_transcript`** - Fetch & cache transcript (returns full text + URI)
+4. **`generate_customer_snapshot`** - Generate full snapshot from cached transcript URI
+5. **`generate_snapshot_from_zoom`** - One-step: fetch + generate full snapshot
 
 ### Transcript Querying (MCP Resources)
 

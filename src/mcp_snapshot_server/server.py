@@ -60,10 +60,20 @@ class SnapshotMCPServer:
         self._register_handlers()
 
         # Load demo transcript if enabled
+        self.logger.info(
+            "Checking demo mode configuration",
+            extra={"demo_mode": self.settings.demo.mode}
+        )
         if self.settings.demo.mode:
+            self.logger.info("Demo mode enabled, loading demo transcript")
             self._load_demo_transcript()
+        else:
+            self.logger.info("Demo mode disabled")
 
-        self.logger.info("MCP Snapshot Server initialized")
+        self.logger.info(
+            "MCP Snapshot Server initialized",
+            extra={"transcripts_loaded": len(self.transcripts)}
+        )
 
     def _register_handlers(self):
         """Register all MCP primitive handlers."""
@@ -135,7 +145,7 @@ class SnapshotMCPServer:
                     "transcript_id": transcript_id,
                     "uri": transcript_uri,
                     "speakers": len(parsed_data.get("speakers", [])),
-                    "filename": filename
+                    "vtt_filename": filename
                 }
             )
 
@@ -155,8 +165,16 @@ class SnapshotMCPServer:
         """
         return [
             Tool(
+                name="list_cached_transcripts",
+                description="List all transcripts currently cached in server memory. This includes demo transcripts (when DEMO_MODE is enabled) and any transcripts previously fetched from Zoom. Returns transcript URIs that can be used with generate_customer_snapshot.",
+                inputSchema={
+                    "type": "object",
+                    "properties": {},
+                },
+            ),
+            Tool(
                 name="list_zoom_recordings",
-                description="List Zoom cloud recordings with available transcripts. Requires Zoom API credentials to be configured (ZOOM_ACCOUNT_ID, ZOOM_CLIENT_ID, ZOOM_CLIENT_SECRET).",
+                description="List Zoom cloud recordings with available transcripts from Zoom's cloud storage. Use list_cached_transcripts to see transcripts already loaded in memory (including demo transcripts). Requires Zoom API credentials to be configured (ZOOM_ACCOUNT_ID, ZOOM_CLIENT_ID, ZOOM_CLIENT_SECRET).",
                 inputSchema={
                     "type": "object",
                     "properties": {
@@ -216,7 +234,7 @@ class SnapshotMCPServer:
             ),
             Tool(
                 name="generate_customer_snapshot",
-                description="Generate a comprehensive Customer Success Snapshot from a cached transcript URI. The transcript must first be fetched from Zoom using fetch_zoom_transcript.",
+                description="Generate a comprehensive Customer Success Snapshot from a cached transcript URI. Use list_cached_transcripts to see available transcript URIs (including preloaded demo transcripts). You can also fetch new transcripts from Zoom using fetch_zoom_transcript.",
                 inputSchema={
                     "type": "object",
                     "properties": {
@@ -248,7 +266,9 @@ class SnapshotMCPServer:
         Returns:
             Tool execution results
         """
-        if name == "list_zoom_recordings":
+        if name == "list_cached_transcripts":
+            return await self._list_cached_transcripts(arguments)
+        elif name == "list_zoom_recordings":
             return await self._list_zoom_recordings(arguments)
         elif name == "fetch_zoom_transcript":
             return await self._fetch_zoom_transcript(arguments)
@@ -274,6 +294,86 @@ class SnapshotMCPServer:
         """
         content_hash = hashlib.sha256(vtt_content.encode()).hexdigest()
         return content_hash[:12]  # Use first 12 chars for readability
+
+    async def _list_cached_transcripts(self, arguments: dict[str, Any]) -> list[TextContent]:
+        """List all transcripts currently cached in server memory.
+
+        Args:
+            arguments: Tool arguments (none required)
+
+        Returns:
+            List of cached transcripts with metadata
+        """
+        self.logger.info(
+            "Listing cached transcripts",
+            extra={"count": len(self.transcripts)},
+        )
+
+        if not self.transcripts:
+            return [
+                TextContent(
+                    type="text",
+                    text="No transcripts currently cached in memory.\n\n"
+                    + "You can:\n"
+                    + "- Use list_zoom_recordings to find available Zoom meetings\n"
+                    + "- Use fetch_zoom_transcript to cache a transcript from Zoom\n"
+                    + "- Enable DEMO_MODE to preload the demo transcript",
+                )
+            ]
+
+        # Build list of cached transcripts
+        transcripts_list = []
+        for transcript_id, transcript_data in self.transcripts.items():
+            transcript_info = {
+                "transcript_id": transcript_id,
+                "uri": transcript_data["uri"],
+                "filename": transcript_data["filename"],
+                "source": transcript_data.get("source", "unknown"),
+            }
+
+            # Add source-specific metadata
+            if transcript_data.get("source") == "zoom" and "zoom_metadata" in transcript_data:
+                zoom_meta = transcript_data["zoom_metadata"]
+                transcript_info["metadata"] = {
+                    "meeting_id": zoom_meta.get("meeting_id"),
+                    "topic": zoom_meta.get("topic"),
+                    "start_time": zoom_meta.get("start_time"),
+                    "duration": zoom_meta.get("duration"),
+                }
+            elif transcript_data.get("source") == "demo" and "demo_metadata" in transcript_data:
+                demo_meta = transcript_data["demo_metadata"]
+                transcript_info["metadata"] = {
+                    "topic": demo_meta.get("topic"),
+                    "start_time": demo_meta.get("start_time"),
+                    "duration": demo_meta.get("duration"),
+                    "description": demo_meta.get("description"),
+                }
+
+            # Add speaker information
+            parsed_data = transcript_data.get("parsed_data", {})
+            transcript_info["speakers"] = parsed_data.get("speakers", [])
+            transcript_info["speaker_turns"] = len(parsed_data.get("speaker_turns", []))
+
+            transcripts_list.append(transcript_info)
+
+        response_data = {
+            "cached_transcripts": transcripts_list,
+            "total_count": len(transcripts_list),
+        }
+
+        self.logger.info(
+            f"Found {len(transcripts_list)} cached transcript(s)",
+            extra={"count": len(transcripts_list)},
+        )
+
+        return [
+            TextContent(
+                type="text",
+                text=f"Found {len(transcripts_list)} cached transcript(s) in memory\n\n"
+                + json.dumps(response_data, indent=2)
+                + "\n\nYou can use any transcript URI with the generate_customer_snapshot tool.",
+            )
+        ]
 
     async def _generate_snapshot(self, arguments: dict[str, Any]) -> list[TextContent]:
         """Generate customer success snapshot from cached transcript URI.
@@ -739,6 +839,13 @@ class SnapshotMCPServer:
                 date_str = start_time.split("T")[0] if start_time else "Unknown date"
                 description = f"Zoom meeting: {topic} ({date_str})"
                 name = f"Zoom: {topic}"
+            elif transcript_data.get("source") == "demo" and "demo_metadata" in transcript_data:
+                demo_meta = transcript_data["demo_metadata"]
+                topic = demo_meta.get("topic", "Demo Transcript")
+                start_time = demo_meta.get("start_time", "")
+                date_str = start_time.split("T")[0] if start_time else ""
+                description = f"Demo transcript: {topic}" + (f" ({date_str})" if date_str else "")
+                name = f"Demo: {topic}"
             else:
                 description = f"VTT transcript: {transcript_data['filename']}"
                 name = f"Transcript: {transcript_data['filename']}"
@@ -1092,6 +1199,10 @@ async def async_main():
 def main():
     """Synchronous entry point for the MCP server (called by script entry point)."""
     import asyncio
+    from mcp_snapshot_server.utils.logging_config import setup_logging
+
+    # Initialize logging
+    setup_logging(level="INFO", structured=True)
 
     asyncio.run(async_main())
 
