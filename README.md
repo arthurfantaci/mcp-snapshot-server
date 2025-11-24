@@ -80,8 +80,18 @@ MCP Snapshot Server is a production-ready Model Context Protocol (MCP) server th
 - **Python 3.10+** (3.11 or 3.12 recommended)
 - **uv** package manager ([install](https://docs.astral.sh/uv/))
 - **Anthropic API key** with Claude access
-- **Zoom OAuth credentials** (Account ID, Client ID, Client Secret) - See [docs/ZOOM_SETUP.md](docs/ZOOM_SETUP.md)
-  - ⚠️ **Important**: Your Zoom app must have the `cloud_recording:read:list_recording_files` scopes enabled
+- **Zoom OAuth credentials** (Account ID, Client ID, Client Secret)
+
+> [!IMPORTANT]
+> **Zoom App Creation Required**
+>
+> You must create a **Server-to-Server OAuth app** on the [Zoom App Marketplace](https://marketplace.zoom.us/) to obtain the required credentials (Account ID, Client ID, and Client Secret).
+>
+> Your app must have these scopes enabled:
+> - `cloud_recording:read:list_recording_files:admin`
+> - `cloud_recording:read:list_recording_files`
+>
+> 📖 See [docs/ZOOM_SETUP.md](docs/ZOOM_SETUP.md) for complete step-by-step instructions on creating your Zoom app and configuring the required scopes.
 
 ### Installation
 
