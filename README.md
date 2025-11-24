@@ -497,28 +497,66 @@ mcp-snapshot-server/
 
 ### Environment Variables
 
+**Required:**
 ```bash
-# Required
-LLM_ANTHROPIC_API_KEY=sk-ant-your-key-here
+# Anthropic API Key for Claude AI
+LLM_ANTHROPIC_API_KEY=your_anthropic_api_key_here
 
-# Optional - LLM Settings
-LLM_MODEL=claude-3-5-sonnet-20241022
-LLM_TEMPERATURE=0.3
-LLM_MAX_TOKENS=4000
-
-# Optional - Workflow
-WORKFLOW_PARALLEL_SECTION_GENERATION=false
-WORKFLOW_MIN_CONFIDENCE_THRESHOLD=0.5
-
-# Optional - NLP
-NLP_SPACY_MODEL=en_core_web_sm
-NLP_MAX_ENTITIES_PER_TYPE=10
-
-# Optional - Logging
-LOG_LEVEL=INFO
+# Zoom OAuth Credentials (all three required for Zoom integration)
+# See docs/ZOOM_SETUP.md for detailed setup instructions
+ZOOM_ACCOUNT_ID=your_zoom_account_id
+ZOOM_CLIENT_ID=your_zoom_client_id
+ZOOM_CLIENT_SECRET=your_zoom_client_secret
 ```
 
-See `.env.example` for all configuration options.
+**Optional - LLM Settings:**
+```bash
+LLM_MODEL=claude-sonnet-4-20250514
+LLM_TEMPERATURE=0.3
+LLM_MAX_TOKENS_PER_SECTION=1500
+LLM_MAX_TOKENS_ANALYSIS=2000
+LLM_TIMEOUT=60
+LLM_MAX_RETRIES=3
+```
+
+**Optional - Zoom Settings:**
+```bash
+ZOOM_DEFAULT_USER_ID=me
+ZOOM_API_TIMEOUT=30
+ZOOM_MAX_RETRIES=3
+ZOOM_CACHE_TTL_SECONDS=900     # 15 minutes
+ZOOM_MAX_CACHE_SIZE=100
+```
+
+**Optional - Workflow Settings:**
+```bash
+WORKFLOW_PARALLEL_SECTION_GENERATION=false
+WORKFLOW_MIN_CONFIDENCE_THRESHOLD=0.5
+WORKFLOW_ENABLE_ELICITATION=true
+WORKFLOW_ENABLE_VALIDATION=true
+WORKFLOW_ENABLE_IMPROVEMENTS=true
+WORKFLOW_MAX_IMPROVEMENT_ITERATIONS=2
+WORKFLOW_DEFAULT_OUTPUT_FORMAT=markdown
+WORKFLOW_INCLUDE_METADATA=true
+WORKFLOW_INCLUDE_CONFIDENCE_SCORES=false
+```
+
+**Optional - NLP Settings:**
+```bash
+NLP_SPACY_MODEL=en_core_web_sm
+NLP_EXTRACT_ENTITIES=true
+NLP_EXTRACT_TOPICS=true
+NLP_MIN_ENTITY_CONFIDENCE=0.5
+```
+
+**Optional - Server Settings:**
+```bash
+MCP_SERVER_NAME=snapshot-server
+MCP_LOG_LEVEL=INFO
+MCP_STRUCTURED_LOGGING=true
+```
+
+💡 **Tip:** Copy `.env.example` to `.env` and update with your credentials. See [docs/ZOOM_SETUP.md](docs/ZOOM_SETUP.md) for step-by-step Zoom OAuth setup.
 
 ## Production Deployment
 
