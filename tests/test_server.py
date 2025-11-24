@@ -93,11 +93,11 @@ class TestToolsPrimitive:
         assert "from_date" in list_tool.inputSchema["properties"]
         assert "to_date" in list_tool.inputSchema["properties"]
 
-        # Check download_zoom_transcript tool
-        download_tool = next(t for t in tools if t.name == "download_zoom_transcript")
-        assert "download" in download_tool.description.lower()
-        assert "meeting_id" in download_tool.inputSchema["properties"]
-        assert "meeting_id" in download_tool.inputSchema["required"]
+        # Check fetch_zoom_transcript tool
+        fetch_tool = next(t for t in tools if t.name == "fetch_zoom_transcript")
+        assert "fetch" in fetch_tool.description.lower()
+        assert "meeting_id" in fetch_tool.inputSchema["properties"]
+        assert "meeting_id" in fetch_tool.inputSchema["required"]
 
         # Check generate_snapshot_from_zoom tool
         zoom_snapshot_tool = next(t for t in tools if t.name == "generate_snapshot_from_zoom")
@@ -128,7 +128,7 @@ class TestToolsPrimitive:
         # Mock orchestrator
         mcp_server.orchestrator.process = AsyncMock(return_value=mock_snapshot_result)
 
-        # Manually cache a transcript first (simulating download_zoom_transcript)
+        # Manually cache a transcript first (simulating fetch_zoom_transcript)
         from mcp_snapshot_server.tools.transcript_utils import parse_vtt_content
 
         parsed_data = parse_vtt_content(sample_vtt_content, "test.vtt")
@@ -221,7 +221,7 @@ class TestToolsPrimitive:
         self, mcp_server, mock_snapshot_result, sample_vtt_content, test_env_vars
     ):
         """Test generating snapshot using transcript URI (Zoom workflow)."""
-        # Manually cache a transcript (simulating download_zoom_transcript)
+        # Manually cache a transcript (simulating fetch_zoom_transcript)
         from mcp_snapshot_server.tools.transcript_utils import parse_vtt_content
 
         parsed_data = parse_vtt_content(sample_vtt_content, "meeting.vtt")
@@ -420,6 +420,127 @@ class TestResourcesPrimitive:
 
         assert exc_info.value.error_code == ErrorCode.RESOURCE_NOT_FOUND
         assert "Unknown resource URI scheme" in str(exc_info.value.message)
+
+    @pytest.mark.asyncio
+    async def test_list_resources_with_zoom_transcript(
+        self, mcp_server, sample_vtt_content
+    ):
+        """Test that Zoom transcripts appear in resources with proper metadata."""
+        from mcp_snapshot_server.tools.transcript_utils import parse_vtt_content
+
+        # Cache a Zoom transcript
+        parsed_data = parse_vtt_content(sample_vtt_content, "zoom_123.vtt")
+        transcript_id = mcp_server._generate_transcript_id(sample_vtt_content)
+
+        mcp_server.transcripts[transcript_id] = {
+            "content": sample_vtt_content,
+            "filename": "zoom_123.vtt",
+            "parsed_data": parsed_data,
+            "uri": f"transcript://{transcript_id}",
+            "source": "zoom",
+            "zoom_metadata": {
+                "meeting_id": "123456789",
+                "topic": "Customer Success Review",
+                "start_time": "2024-11-23T10:30:00Z",
+                "duration": 3600,
+            },
+        }
+
+        resources = await mcp_server._list_resources()
+
+        # Find transcript resources
+        transcript_resources = [
+            r for r in resources if str(r.uri).startswith("transcript://")
+        ]
+        assert len(transcript_resources) == 1
+
+        # Check Zoom transcript has proper name and description
+        zoom_transcript = transcript_resources[0]
+        assert "Customer Success Review" in zoom_transcript.name
+        assert "2024-11-23" in zoom_transcript.description
+        assert zoom_transcript.mimeType == "text/vtt"
+
+    @pytest.mark.asyncio
+    async def test_read_transcript_resource(self, mcp_server, sample_vtt_content):
+        """Test reading a transcript resource returns text and metadata."""
+        from mcp_snapshot_server.tools.transcript_utils import parse_vtt_content
+        import json
+
+        # Cache a transcript
+        parsed_data = parse_vtt_content(sample_vtt_content, "test.vtt")
+        transcript_id = mcp_server._generate_transcript_id(sample_vtt_content)
+
+        mcp_server.transcripts[transcript_id] = {
+            "content": sample_vtt_content,
+            "filename": "test.vtt",
+            "parsed_data": parsed_data,
+            "uri": f"transcript://{transcript_id}",
+            "source": "upload",
+        }
+
+        # Read the resource
+        content = await mcp_server._read_resource(f"transcript://{transcript_id}")
+
+        # Parse response
+        response = json.loads(content)
+
+        # Check that text field is present and contains transcript content
+        assert "text" in response
+        assert len(response["text"]) > 0
+        assert "speakers" in response
+        assert response["filename"] == "test.vtt"
+        assert response["source"] == "upload"
+
+    @pytest.mark.asyncio
+    async def test_read_zoom_transcript_resource(
+        self, mcp_server, sample_vtt_content
+    ):
+        """Test that Zoom transcript resources include zoom_metadata."""
+        from mcp_snapshot_server.tools.transcript_utils import parse_vtt_content
+        import json
+
+        # Cache a Zoom transcript
+        parsed_data = parse_vtt_content(sample_vtt_content, "zoom_123.vtt")
+        transcript_id = mcp_server._generate_transcript_id(sample_vtt_content)
+
+        mcp_server.transcripts[transcript_id] = {
+            "content": sample_vtt_content,
+            "filename": "zoom_123.vtt",
+            "parsed_data": parsed_data,
+            "uri": f"transcript://{transcript_id}",
+            "source": "zoom",
+            "zoom_metadata": {
+                "meeting_id": "123456789",
+                "topic": "Customer Success Review",
+                "start_time": "2024-11-23T10:30:00Z",
+                "duration": 3600,
+            },
+        }
+
+        # Read the resource
+        content = await mcp_server._read_resource(f"transcript://{transcript_id}")
+
+        # Parse response
+        response = json.loads(content)
+
+        # Check that zoom_metadata is included
+        assert "zoom_metadata" in response
+        assert response["zoom_metadata"]["meeting_id"] == "123456789"
+        assert response["zoom_metadata"]["topic"] == "Customer Success Review"
+        assert response["source"] == "zoom"
+
+        # Check that text is prominent for LLM consumption
+        assert "text" in response
+        assert len(response["text"]) > 0
+
+    @pytest.mark.asyncio
+    async def test_read_nonexistent_transcript(self, mcp_server):
+        """Test reading nonexistent transcript raises error."""
+        with pytest.raises(MCPServerError) as exc_info:
+            await mcp_server._read_resource("transcript://nonexistent")
+
+        assert exc_info.value.error_code == ErrorCode.RESOURCE_NOT_FOUND
+        assert "Transcript not found" in str(exc_info.value.message)
 
 
 class TestPromptsPrimitive:

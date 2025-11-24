@@ -187,24 +187,40 @@ list_zoom_recordings(from_date="2024-11-01", to_date="2024-11-24")
 list_zoom_recordings(search_query="customer")
 ```
 
-### Step 3: Download a Transcript
+### Step 3: Fetch a Transcript
 
 ```
 # Get the meeting_id from list_zoom_recordings output
-download_zoom_transcript(meeting_id="123456789")
+fetch_zoom_transcript(meeting_id="123456789")
+# Returns: transcript://abc123
 ```
 
-### Step 4: Generate a Snapshot
+This fetches the transcript from Zoom and caches it in server memory. The returned URI can be used for:
+- Generating snapshots
+- Querying directly in your conversations
 
+### Step 4: Use the Transcript
+
+**Option A: Generate a Snapshot**
 ```
-# Single-step: Download and generate snapshot
+# Single-step: Fetch and generate snapshot
 generate_snapshot_from_zoom(meeting_id="123456789", output_format="markdown")
 
-# OR Two-step: Download first, then generate
-1. download_zoom_transcript(meeting_id="123456789")
+# OR Two-step: Fetch first, then generate
+1. fetch_zoom_transcript(meeting_id="123456789")
    # Returns transcript://abc123
 2. generate_customer_snapshot(transcript_uri="transcript://abc123", output_format="json")
 ```
+
+**Option B: Query Directly**
+```
+# After fetching, you can ask questions about the transcript
+"What were the main concerns raised in transcript://abc123?"
+"Who attended the meeting in transcript://abc123?"
+"Summarize the action items from transcript://abc123"
+```
+
+The transcript is exposed as an MCP Resource, allowing Claude to read and analyze it directly.
 
 ---
 

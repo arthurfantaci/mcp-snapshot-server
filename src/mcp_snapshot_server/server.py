@@ -113,8 +113,8 @@ class SnapshotMCPServer:
                 },
             ),
             Tool(
-                name="download_zoom_transcript",
-                description="Download a VTT transcript from a specific Zoom meeting. Returns a transcript URI that can be used with generate_customer_snapshot.",
+                name="fetch_zoom_transcript",
+                description="Fetch and cache a VTT transcript from a specific Zoom meeting. Returns a transcript URI (e.g., transcript://abc123) that can be used with generate_customer_snapshot or referenced directly in your conversations to ask questions about the transcript.",
                 inputSchema={
                     "type": "object",
                     "properties": {
@@ -128,7 +128,7 @@ class SnapshotMCPServer:
             ),
             Tool(
                 name="generate_snapshot_from_zoom",
-                description="Download Zoom transcript and generate Customer Success Snapshot in a single step. Convenience tool that combines download_zoom_transcript and generate_customer_snapshot.",
+                description="Fetch Zoom transcript and generate Customer Success Snapshot in a single step. Convenience tool that combines fetch_zoom_transcript and generate_customer_snapshot.",
                 inputSchema={
                     "type": "object",
                     "properties": {
@@ -148,13 +148,13 @@ class SnapshotMCPServer:
             ),
             Tool(
                 name="generate_customer_snapshot",
-                description="Generate a comprehensive Customer Success Snapshot from a cached transcript URI. The transcript must first be downloaded from Zoom using download_zoom_transcript.",
+                description="Generate a comprehensive Customer Success Snapshot from a cached transcript URI. The transcript must first be fetched from Zoom using fetch_zoom_transcript.",
                 inputSchema={
                     "type": "object",
                     "properties": {
                         "transcript_uri": {
                             "type": "string",
-                            "description": "URI of a cached transcript (e.g., 'transcript://abc123'). Obtain this from download_zoom_transcript tool.",
+                            "description": "URI of a cached transcript (e.g., 'transcript://abc123'). Obtain this from fetch_zoom_transcript tool.",
                         },
                         "output_format": {
                             "type": "string",
@@ -182,8 +182,8 @@ class SnapshotMCPServer:
         """
         if name == "list_zoom_recordings":
             return await self._list_zoom_recordings(arguments)
-        elif name == "download_zoom_transcript":
-            return await self._download_zoom_transcript(arguments)
+        elif name == "fetch_zoom_transcript":
+            return await self._fetch_zoom_transcript(arguments)
         elif name == "generate_snapshot_from_zoom":
             return await self._generate_snapshot_from_zoom(arguments)
         elif name == "generate_customer_snapshot":
@@ -241,7 +241,7 @@ class SnapshotMCPServer:
         if transcript_id not in self.transcripts:
             raise MCPServerError(
                 error_code=ErrorCode.RESOURCE_NOT_FOUND,
-                message=f"Transcript not found: {transcript_uri}. Use download_zoom_transcript first.",
+                message=f"Transcript not found: {transcript_uri}. Use fetch_zoom_transcript first.",
                 details={"uri": transcript_uri, "transcript_id": transcript_id},
             )
 
@@ -400,14 +400,14 @@ class SnapshotMCPServer:
                 details={"error": str(e), "error_type": type(e).__name__},
             ) from e
 
-    async def _download_zoom_transcript(self, arguments: dict[str, Any]) -> list[TextContent]:
-        """Download a Zoom transcript and cache it.
+    async def _fetch_zoom_transcript(self, arguments: dict[str, Any]) -> list[TextContent]:
+        """Fetch a Zoom transcript and cache it in server memory.
 
         Args:
             arguments: Tool arguments including meeting_id
 
         Returns:
-            Transcript URI and metadata
+            Transcript URI and metadata that can be used for querying or snapshot generation
         """
         from mcp_snapshot_server.tools.zoom_api import (
             ZoomAPIManager,
@@ -427,7 +427,7 @@ class SnapshotMCPServer:
             )
 
         self.logger.info(
-            "Downloading Zoom transcript",
+            "Fetching Zoom transcript",
             extra={"meeting_id": meeting_id},
         )
 
@@ -493,7 +493,7 @@ class SnapshotMCPServer:
             }
 
             self.logger.info(
-                "Zoom transcript downloaded and cached",
+                "Zoom transcript fetched and cached",
                 extra={
                     "meeting_id": meeting_id,
                     "transcript_id": transcript_id,
@@ -517,7 +517,7 @@ class SnapshotMCPServer:
             return [
                 TextContent(
                     type="text",
-                    text=f"Zoom transcript downloaded successfully!\n\nURI: {transcript_uri}\n\n"
+                    text=f"Zoom transcript fetched and cached successfully!\n\nURI: {transcript_uri}\n\n"
                     + json.dumps(response, indent=2),
                 )
             ]
@@ -560,8 +560,8 @@ class SnapshotMCPServer:
         )
 
         try:
-            # Step 1: Download transcript
-            download_result = await self._download_zoom_transcript({"meeting_id": meeting_id})
+            # Step 1: Fetch transcript
+            download_result = await self._fetch_zoom_transcript({"meeting_id": meeting_id})
 
             # Extract transcript_uri from the download result
             # The result text contains JSON with the URI
@@ -653,11 +653,24 @@ class SnapshotMCPServer:
 
         # Add transcript resources
         for transcript_id, transcript_data in self.transcripts.items():
+            # Build description based on source
+            if transcript_data.get("source") == "zoom" and "zoom_metadata" in transcript_data:
+                zoom_meta = transcript_data["zoom_metadata"]
+                topic = zoom_meta.get("topic", "Unknown Meeting")
+                start_time = zoom_meta.get("start_time", "")
+                # Format start_time for display (e.g., "2024-11-23T10:30:00Z" -> "2024-11-23")
+                date_str = start_time.split("T")[0] if start_time else "Unknown date"
+                description = f"Zoom meeting: {topic} ({date_str})"
+                name = f"Zoom: {topic}"
+            else:
+                description = f"VTT transcript: {transcript_data['filename']}"
+                name = f"Transcript: {transcript_data['filename']}"
+
             resources.append(
                 Resource(
                     uri=f"transcript://{transcript_id}",
-                    name=f"Transcript: {transcript_data['filename']}",
-                    description=f"Uploaded VTT transcript: {transcript_data['filename']}",
+                    name=name,
+                    description=description,
                     mimeType="text/vtt",
                 )
             )
@@ -734,7 +747,7 @@ class SnapshotMCPServer:
             uri: Transcript URI (transcript://<id>)
 
         Returns:
-            Resource content as JSON string with metadata and parsed data
+            Resource content as JSON string with text, metadata, and structure
         """
         transcript_id = uri.replace("transcript://", "")
 
@@ -746,13 +759,30 @@ class SnapshotMCPServer:
             )
 
         transcript_data = self.transcripts[transcript_id]
+        parsed_data = transcript_data["parsed_data"]
 
-        # Return metadata and parsed content (not raw VTT to save bandwidth)
+        # Build response with full text prominent for LLM consumption
         response = {
             "uri": uri,
             "transcript_id": transcript_id,
             "filename": transcript_data["filename"],
-            "parsed_data": transcript_data["parsed_data"],
+            # Full text is the primary content for LLM queries
+            "text": parsed_data.get("text", ""),
+            # Include speakers for context
+            "speakers": parsed_data.get("speakers", []),
+            # Add Zoom metadata if available
+            "source": transcript_data.get("source"),
+        }
+
+        # Include Zoom-specific metadata if this is from Zoom
+        if transcript_data.get("source") == "zoom" and "zoom_metadata" in transcript_data:
+            response["zoom_metadata"] = transcript_data["zoom_metadata"]
+
+        # Include full parsed data for detailed analysis if needed
+        response["parsed_data"] = {
+            "speaker_turns": parsed_data.get("speaker_turns", []),
+            "duration": parsed_data.get("duration", 0),
+            "metadata": parsed_data.get("metadata", {}),
         }
 
         return json.dumps(response, indent=2)

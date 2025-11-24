@@ -147,8 +147,16 @@ list_zoom_recordings
 # Search for specific recordings
 list_zoom_recordings with topic containing "customer"
 
-# Download and generate snapshot in one step
+# Fetch and generate snapshot in one step
 generate_snapshot_from_zoom for meeting ID 123456789
+
+# OR: Fetch transcript to query it directly
+fetch_zoom_transcript meeting_id="123456789"
+# Returns: transcript://abc789
+
+# Now ask questions about it
+What pain points were discussed in transcript://abc789?
+Who were the key attendees in that meeting?
 ```
 
 See [CLAUDE_DESKTOP.md](CLAUDE_DESKTOP.md) for detailed integration guide.
@@ -171,9 +179,9 @@ recordings = await server._call_tool(
     }
 )
 
-# Download specific transcript
+# Fetch and cache specific transcript
 transcript = await server._call_tool(
-    "download_zoom_transcript",
+    "fetch_zoom_transcript",
     {"meeting_id": "123456789"}
 )
 
@@ -181,7 +189,7 @@ transcript = await server._call_tool(
 result = await server._call_tool(
     "generate_customer_snapshot",
     {
-        "transcript_uri": "transcript://abc123",  # From download step
+        "transcript_uri": "transcript://abc123",  # From fetch step
         "output_format": "json"  # or "markdown"
     }
 )
@@ -265,9 +273,22 @@ Final Snapshot (11 sections)
 
 **Available Tools:**
 1. `list_zoom_recordings` - List recordings with transcripts
-2. `download_zoom_transcript` - Download & cache transcript
+2. `fetch_zoom_transcript` - Fetch & cache transcript (returns transcript URI)
 3. `generate_customer_snapshot` - Generate from cached transcript URI
-4. `generate_snapshot_from_zoom` - One-step download + generate
+4. `generate_snapshot_from_zoom` - One-step fetch + generate
+
+**Querying Transcripts Directly:**
+Fetched transcripts are exposed as MCP Resources, allowing you to ask questions directly:
+```
+# Fetch transcript
+fetch_zoom_transcript meeting_id="123"
+→ Returns: transcript://abc789
+
+# Query it directly in conversation
+"What pain points were discussed in transcript://abc789?"
+"Who were the key stakeholders in that meeting?"
+"Summarize the technical requirements from transcript://abc789"
+```
 
 ### Multi-Agent System
 
