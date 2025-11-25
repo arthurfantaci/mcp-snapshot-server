@@ -2,7 +2,7 @@
 
 An MCP server that transforms Zoom meeting transcripts into instant AI-powered insights or comprehensive Customer Success Snapshots—giving you fast answers or detailed documentation, seamlessly integrated with Claude Desktop.
 
-[![Tests](https://img.shields.io/badge/tests-123%20passing-brightgreen)]()
+[![Tests](https://img.shields.io/badge/tests-138%20passing-brightgreen)]()
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)]()
 [![License](https://img.shields.io/badge/license-MIT-blue)]()
 
@@ -34,7 +34,7 @@ MCP Snapshot Server is a production-ready Model Context Protocol (MCP) server th
 
 **🏗️ Enterprise-Grade Architecture**
 - All 6 MCP primitives fully implemented (Tools, Resources, Prompts, Sampling, Elicitation, Logging)
-- 123 passing tests with comprehensive error handling
+- 138 passing tests with comprehensive error handling
 - Hybrid NLP + AI approach: spaCy/NLTK for entity extraction, Claude for deep analysis
 - Structured JSON logging with full traceability for debugging and auditing
 
@@ -105,7 +105,7 @@ MCP Snapshot Server is a production-ready Model Context Protocol (MCP) server th
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # 2. Clone repository
-git clone https://github.com/your-org/mcp-snapshot-server.git
+git clone https://github.com/arthurfantaci/mcp-snapshot-server.git
 cd mcp-snapshot-server
 
 # 3. Install dependencies
@@ -127,7 +127,7 @@ cp .env.example .env
 ### Run Tests
 
 ```bash
-# Run all tests (should see 123 passing)
+# Run all tests (should see 138 passing)
 uv run pytest tests/ -v
 
 # Run specific test suites
@@ -362,11 +362,15 @@ Complete 11-Section Snapshot with confidence scores
 
 ### Available Tools
 
-1. **`list_cached_transcripts`** - List all transcripts in server memory (includes demo transcripts)
-2. **`list_zoom_recordings`** - List and search Zoom cloud recordings with transcripts
-3. **`fetch_zoom_transcript`** - Fetch & cache transcript (returns full text + URI)
-4. **`generate_customer_snapshot`** - Generate full snapshot from cached transcript URI
-5. **`generate_snapshot_from_zoom`** - One-step: fetch + generate full snapshot
+| Tool | Description |
+|------|-------------|
+| `list_cached_transcripts` | List all transcripts in server memory (includes demo transcripts) |
+| `list_all_transcripts` | Unified view of cached + Zoom cloud transcripts (shows which are already cached) |
+| `list_zoom_recordings` | List and search Zoom cloud recordings with transcripts |
+| `fetch_zoom_transcript` | Fetch & cache transcript (returns full text + URI) |
+| `read_transcript_content` | Read raw transcript content for ad-hoc queries without generating snapshots |
+| `generate_customer_snapshot` | Generate full 11-section snapshot from cached transcript URI |
+| `generate_snapshot_from_zoom` | One-step: fetch transcript + generate full snapshot |
 
 ### Transcript Querying (MCP Resources)
 
@@ -403,7 +407,7 @@ OrchestrationAgent
 - **Package Manager**: uv (10-100x faster than pip)
 - **Linting**: ruff (Rust-based, replaces black + isort + flake8)
 - **Type Checking**: mypy with strict mode
-- **Testing**: pytest with 123 passing tests
+- **Testing**: pytest with 138 passing tests
 - **LLM**: Anthropic Claude (Sonnet 4.5)
 - **NLP**: spaCy + NLTK for entity extraction
 - **API Integration**: Zoom OAuth 2.0 Server-to-Server
@@ -520,8 +524,8 @@ mcp-snapshot-server/
 │       ├── logging_config.py # Structured logging
 │       ├── errors.py         # Error handling
 │       └── sampling.py       # LLM integration
-├── tests/                     # 123 comprehensive tests
-│   ├── test_server.py        # MCP server tests (35)
+├── tests/                     # 138 comprehensive tests
+│   ├── test_server.py        # MCP server tests (50)
 │   ├── test_agents/          # Agent tests (29)
 │   ├── test_tools/           # Tool tests (23)
 │   ├── test_utils/           # Utility tests (36)
@@ -721,7 +725,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 ## Support
 
 - **Documentation**: Check docs in this repository
-- **Issues**: Open a [GitHub Issue](https://github.com/your-org/mcp-snapshot-server/issues)
+- **Issues**: Open a [GitHub Issue](https://github.com/arthurfantaci/mcp-snapshot-server/issues)
 - **Security**: See [SECURITY.md](SECURITY.md) for reporting vulnerabilities
 
 ## Changelog
@@ -731,7 +735,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 - ✅ 11-section snapshot generation
 - ✅ Multi-agent orchestration
 - ✅ Claude Desktop integration
-- ✅ 123/123 tests passing
+- ✅ 138/138 tests passing
 - ✅ Production-ready documentation
 
 ---
