@@ -175,6 +175,27 @@ class SnapshotMCPServer:
                 },
             ),
             Tool(
+                name="list_all_transcripts",
+                description="List all available transcripts from both cached memory and Zoom cloud storage. Provides a unified view combining cached transcripts (including demo) and Zoom recordings with transcripts. Shows which Zoom recordings are already cached. If Zoom credentials are not configured, only cached transcripts are returned with a note.",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "from_date": {
+                            "type": "string",
+                            "description": "Start date for Zoom recordings (YYYY-MM-DD). Defaults to 30 days ago.",
+                        },
+                        "to_date": {
+                            "type": "string",
+                            "description": "End date for Zoom recordings (YYYY-MM-DD). Defaults to today.",
+                        },
+                        "search_query": {
+                            "type": "string",
+                            "description": "Search query to filter Zoom recordings by topic (case-insensitive).",
+                        },
+                    },
+                },
+            ),
+            Tool(
                 name="list_zoom_recordings",
                 description="List Zoom cloud recordings with available transcripts from Zoom's cloud storage. Use list_cached_transcripts to see transcripts already loaded in memory (including demo transcripts). Requires Zoom API credentials to be configured (ZOOM_ACCOUNT_ID, ZOOM_CLIENT_ID, ZOOM_CLIENT_SECRET).",
                 inputSchema={
@@ -254,6 +275,29 @@ class SnapshotMCPServer:
                     "required": ["transcript_uri"],
                 },
             ),
+            Tool(
+                name="read_transcript_content",
+                description="Read raw transcript content from a cached transcript without generating a snapshot. Useful for ad-hoc queries, summarization, or inspecting transcript dialogue. Use list_cached_transcripts to see available transcript URIs.",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "transcript_uri": {
+                            "type": "string",
+                            "description": "URI of a cached transcript (e.g., 'transcript://quest-enterprises-demo'). Obtain from list_cached_transcripts.",
+                        },
+                        "include_timestamps": {
+                            "type": "boolean",
+                            "description": "Include VTT timestamps in output. Default: false.",
+                            "default": False,
+                        },
+                        "max_turns": {
+                            "type": "integer",
+                            "description": "Limit number of speaker turns returned. Useful for previewing long transcripts. Returns all if not specified.",
+                        },
+                    },
+                    "required": ["transcript_uri"],
+                },
+            ),
         ]
 
     async def _call_tool(
@@ -270,6 +314,8 @@ class SnapshotMCPServer:
         """
         if name == "list_cached_transcripts":
             return await self._list_cached_transcripts(arguments)
+        elif name == "list_all_transcripts":
+            return await self._list_all_transcripts(arguments)
         elif name == "list_zoom_recordings":
             return await self._list_zoom_recordings(arguments)
         elif name == "fetch_zoom_transcript":
@@ -278,6 +324,8 @@ class SnapshotMCPServer:
             return await self._generate_snapshot_from_zoom(arguments)
         elif name == "generate_customer_snapshot":
             return await self._generate_snapshot(arguments)
+        elif name == "read_transcript_content":
+            return await self._read_transcript_content(arguments)
         else:
             raise MCPServerError(
                 error_code=ErrorCode.INVALID_INPUT,
@@ -378,6 +426,198 @@ class SnapshotMCPServer:
                 text=f"Found {len(transcripts_list)} cached transcript(s) in memory\n\n"
                 + json.dumps(response_data, indent=2)
                 + "\n\nYou can use any transcript URI with the generate_customer_snapshot tool.",
+            )
+        ]
+
+    async def _list_all_transcripts(self, arguments: dict[str, Any]) -> list[TextContent]:
+        """List all available transcripts from cached memory and Zoom cloud.
+
+        Aggregates results from both sources, handling missing Zoom credentials gracefully.
+
+        Args:
+            arguments: Tool arguments including optional date range and search query for Zoom
+
+        Returns:
+            Combined list of transcripts from all sources
+        """
+        self.logger.info(
+            "Listing all transcripts",
+            extra={
+                "from_date": arguments.get("from_date"),
+                "to_date": arguments.get("to_date"),
+                "search_query": arguments.get("search_query"),
+            },
+        )
+
+        # Initialize response components
+        cached_transcripts: list[dict[str, Any]] = []
+        zoom_recordings: list[dict[str, Any]] = []
+        zoom_note: str | None = None
+        zoom_error: str | None = None
+        zoom_metadata: dict[str, Any] | None = None
+
+        # 1. Get cached transcripts (always available)
+        for transcript_id, transcript_data in self.transcripts.items():
+            transcript_info: dict[str, Any] = {
+                "transcript_id": transcript_id,
+                "uri": transcript_data["uri"],
+                "filename": transcript_data["filename"],
+                "source": transcript_data.get("source", "unknown"),
+                "location": "cached",
+            }
+
+            # Add source-specific metadata
+            if transcript_data.get("source") == "zoom" and "zoom_metadata" in transcript_data:
+                zoom_meta = transcript_data["zoom_metadata"]
+                transcript_info["metadata"] = {
+                    "meeting_id": zoom_meta.get("meeting_id"),
+                    "topic": zoom_meta.get("topic"),
+                    "start_time": zoom_meta.get("start_time"),
+                    "duration": zoom_meta.get("duration"),
+                }
+            elif transcript_data.get("source") == "demo" and "demo_metadata" in transcript_data:
+                demo_meta = transcript_data["demo_metadata"]
+                transcript_info["metadata"] = {
+                    "topic": demo_meta.get("topic"),
+                    "start_time": demo_meta.get("start_time"),
+                    "duration": demo_meta.get("duration"),
+                    "description": demo_meta.get("description"),
+                }
+
+            # Add speaker information
+            parsed_data = transcript_data.get("parsed_data")
+            if parsed_data is not None:
+                transcript_info["speakers"] = parsed_data.speakers
+                transcript_info["speaker_turns"] = len(parsed_data.speaker_turns)
+            else:
+                transcript_info["speakers"] = []
+                transcript_info["speaker_turns"] = 0
+
+            cached_transcripts.append(transcript_info)
+
+        # Build set of cached meeting IDs for duplicate detection
+        cached_meeting_ids: set[str] = set()
+        for t in cached_transcripts:
+            meeting_id = t.get("metadata", {}).get("meeting_id")
+            if meeting_id:
+                cached_meeting_ids.add(str(meeting_id))
+
+        # 2. Get Zoom cloud recordings (if configured)
+        if self.settings.is_zoom_configured:
+            try:
+                from mcp_snapshot_server.tools.zoom_api import (
+                    ZoomAPIManager,
+                    list_user_recordings,
+                    search_recordings_by_topic,
+                )
+
+                from_date = arguments.get("from_date")
+                to_date = arguments.get("to_date")
+                search_query = arguments.get("search_query")
+
+                manager = ZoomAPIManager()
+                result = await list_user_recordings(
+                    manager=manager,
+                    from_date=from_date,
+                    to_date=to_date,
+                    page_size=30,
+                    has_transcript=True,
+                )
+
+                meetings = result["meetings"]
+
+                # Apply search filter if provided
+                if search_query:
+                    meetings = search_recordings_by_topic(meetings, search_query)
+
+                # Format Zoom recordings
+                for meeting in meetings:
+                    meeting_id = str(meeting.get("id"))
+                    zoom_recordings.append({
+                        "meeting_id": meeting_id,
+                        "uuid": meeting.get("uuid"),
+                        "topic": meeting.get("topic"),
+                        "start_time": meeting.get("start_time"),
+                        "duration": meeting.get("duration"),
+                        "recording_count": meeting.get("recording_count"),
+                        "location": "zoom_cloud",
+                        "already_cached": meeting_id in cached_meeting_ids,
+                    })
+
+                zoom_metadata = {
+                    "from_date": result["from_date"],
+                    "to_date": result["to_date"],
+                    "search_query": search_query,
+                }
+
+            except Exception as e:
+                self.logger.warning(
+                    f"Failed to fetch Zoom recordings: {e}",
+                    extra={"error_type": type(e).__name__},
+                )
+                zoom_error = str(e)
+        else:
+            zoom_note = (
+                "Zoom credentials not configured. "
+                "Set ZOOM_ACCOUNT_ID, ZOOM_CLIENT_ID, and ZOOM_CLIENT_SECRET "
+                "to see Zoom cloud recordings."
+            )
+
+        # 3. Build combined response
+        response_data: dict[str, Any] = {
+            "cached_transcripts": cached_transcripts,
+            "zoom_recordings": zoom_recordings,
+            "summary": {
+                "cached_count": len(cached_transcripts),
+                "zoom_cloud_count": len(zoom_recordings),
+                "total_available": len(cached_transcripts) + len(zoom_recordings),
+            },
+        }
+
+        # Add Zoom metadata if available
+        if zoom_metadata:
+            response_data["zoom_search_params"] = zoom_metadata
+
+        # Add notes/errors if present
+        if zoom_note:
+            response_data["note"] = zoom_note
+        if zoom_error:
+            response_data["zoom_error"] = zoom_error
+
+        # Build human-readable summary
+        summary_parts = [f"{len(cached_transcripts)} cached"]
+        if self.settings.is_zoom_configured and zoom_error is None:
+            summary_parts.append(f"{len(zoom_recordings)} in Zoom cloud")
+        elif zoom_note:
+            summary_parts.append("Zoom not configured")
+        elif zoom_error:
+            summary_parts.append("Zoom query failed")
+
+        summary_text = ", ".join(summary_parts)
+
+        self.logger.info(
+            f"Listed all transcripts: {summary_text}",
+            extra={
+                "cached_count": len(cached_transcripts),
+                "zoom_count": len(zoom_recordings),
+            },
+        )
+
+        # Build output text
+        output_lines = [
+            f"Found transcripts: {summary_text}",
+            "",
+            json.dumps(response_data, indent=2),
+            "",
+            "Usage:",
+            "- Cached transcripts: Use the 'uri' directly with generate_customer_snapshot or read_transcript_content",
+            "- Zoom cloud recordings: Use fetch_zoom_transcript with the 'meeting_id' to cache them first",
+        ]
+
+        return [
+            TextContent(
+                type="text",
+                text="\n".join(output_lines),
             )
         ]
 
@@ -729,6 +969,132 @@ class SnapshotMCPServer:
                 message=f"Failed to download Zoom transcript: {str(e)}",
                 details={"meeting_id": meeting_id, "error": str(e), "error_type": type(e).__name__},
             ) from e
+
+    async def _read_transcript_content(self, arguments: dict[str, Any]) -> list[TextContent]:
+        """Read raw transcript content from a cached transcript.
+
+        Args:
+            arguments: Tool arguments including transcript_uri, include_timestamps, max_turns
+
+        Returns:
+            Transcript content with metadata and speaker dialogue
+        """
+        transcript_uri = arguments.get("transcript_uri")
+        include_timestamps = arguments.get("include_timestamps", False)
+        max_turns = arguments.get("max_turns")
+
+        # Validate transcript_uri is provided
+        if not transcript_uri:
+            raise MCPServerError(
+                error_code=ErrorCode.INVALID_INPUT,
+                message="transcript_uri is required",
+                details={"provided_args": list(arguments.keys())},
+            )
+
+        # Parse URI (format: transcript://abc123)
+        if not transcript_uri.startswith("transcript://"):
+            raise MCPServerError(
+                error_code=ErrorCode.INVALID_INPUT,
+                message=f"Invalid transcript URI format: {transcript_uri}",
+                details={"uri": transcript_uri, "expected_format": "transcript://<id>"},
+            )
+
+        transcript_id = transcript_uri.replace("transcript://", "")
+
+        # Retrieve from cache
+        if transcript_id not in self.transcripts:
+            available_uris = [t["uri"] for t in self.transcripts.values()]
+            raise MCPServerError(
+                error_code=ErrorCode.RESOURCE_NOT_FOUND,
+                message=f"Transcript not found: {transcript_uri}",
+                details={
+                    "uri": transcript_uri,
+                    "transcript_id": transcript_id,
+                    "available_uris": available_uris,
+                    "hint": "Use list_cached_transcripts to see available transcripts",
+                },
+            )
+
+        self.logger.info(
+            "Reading transcript content",
+            extra={
+                "transcript_id": transcript_id,
+                "include_timestamps": include_timestamps,
+                "max_turns": max_turns,
+            },
+        )
+
+        cached = self.transcripts[transcript_id]
+        parsed_data = cached.get("parsed_data")
+
+        if parsed_data is None:
+            raise MCPServerError(
+                error_code=ErrorCode.INTERNAL_ERROR,
+                message=f"Transcript data not available for: {transcript_uri}",
+                details={"uri": transcript_uri},
+            )
+
+        # Build metadata response
+        source = cached.get("source", "unknown")
+        source_metadata = cached.get(f"{source}_metadata", {})
+
+        metadata = {
+            "uri": transcript_uri,
+            "transcript_id": transcript_id,
+            "topic": source_metadata.get("topic", "Unknown"),
+            "filename": cached.get("filename", "Unknown"),
+            "speakers": parsed_data.speakers,
+            "duration": parsed_data.duration,
+            "speaker_turns": len(parsed_data.speaker_turns),
+            "source": source,
+        }
+
+        # Format transcript content
+        speaker_turns = parsed_data.speaker_turns
+        total_turns = len(speaker_turns)
+
+        if max_turns is not None and max_turns > 0:
+            speaker_turns = speaker_turns[:max_turns]
+
+        content_lines = []
+        for turn in speaker_turns:
+            if include_timestamps:
+                content_lines.append(
+                    f"[{turn.start} --> {turn.end}] {turn.speaker}: {turn.text}"
+                )
+            else:
+                content_lines.append(f"{turn.speaker}: {turn.text}")
+
+        transcript_content = "\n".join(content_lines)
+
+        # Build response (matching fetch_zoom_transcript format)
+        response_parts = [
+            "Cached transcript retrieved successfully!",
+            "",
+            f"URI: {transcript_uri}",
+            "",
+            "Metadata:",
+            json.dumps(metadata, indent=2),
+            "",
+            "--- Transcript Content ---",
+            transcript_content,
+        ]
+
+        if max_turns is not None and total_turns > max_turns:
+            response_parts.append(
+                f"\n... (truncated, showing {max_turns} of {total_turns} turns)"
+            )
+
+        self.logger.info(
+            "Transcript content retrieved",
+            extra={
+                "transcript_id": transcript_id,
+                "turns_returned": len(speaker_turns),
+                "total_turns": total_turns,
+            },
+        )
+
+        return [TextContent(type="text", text="\n".join(response_parts))]
 
     async def _generate_snapshot_from_zoom(self, arguments: dict[str, Any]) -> list[TextContent]:
         """Download Zoom transcript and generate snapshot in one step.

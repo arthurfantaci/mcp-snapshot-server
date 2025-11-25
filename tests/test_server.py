@@ -85,7 +85,7 @@ class TestToolsPrimitive:
         """Test listing available tools."""
         tools = await mcp_server._list_tools()
 
-        assert len(tools) == 5
+        assert len(tools) == 7
 
         # Check list_cached_transcripts tool
         cached_tool = next(t for t in tools if t.name == "list_cached_transcripts")
@@ -713,3 +713,341 @@ class TestIntegration:
         # 3. Read field definition
         field_def = await mcp_server._read_resource("field://industry")
         assert "Financial Services" in field_def  # Example from definition
+
+
+class TestReadTranscriptContent:
+    """Tests for read_transcript_content tool."""
+
+    @pytest.mark.asyncio
+    async def test_read_transcript_content_basic(
+        self, mcp_server, sample_vtt_content, test_env_vars
+    ):
+        """Test reading cached transcript content."""
+        from mcp_snapshot_server.tools.transcript_utils import parse_vtt_content
+
+        # Setup: Cache a transcript
+        parsed_data = parse_vtt_content(sample_vtt_content, "test.vtt")
+        transcript_id = mcp_server._generate_transcript_id(sample_vtt_content)
+        transcript_uri = f"transcript://{transcript_id}"
+
+        mcp_server.transcripts[transcript_id] = {
+            "content": sample_vtt_content,
+            "filename": "test.vtt",
+            "parsed_data": parsed_data,
+            "uri": transcript_uri,
+            "source": "zoom",
+            "zoom_metadata": {"topic": "Test Meeting", "duration": 3600},
+        }
+
+        # Test
+        result = await mcp_server._call_tool(
+            "read_transcript_content", {"transcript_uri": transcript_uri}
+        )
+
+        assert len(result) == 1
+        text = result[0].text
+        assert "Cached transcript retrieved successfully!" in text
+        assert transcript_uri in text
+        assert "--- Transcript Content ---" in text
+        assert "Metadata:" in text
+
+    @pytest.mark.asyncio
+    async def test_read_transcript_content_with_timestamps(
+        self, mcp_server, sample_vtt_content, test_env_vars
+    ):
+        """Test reading transcript with timestamps included."""
+        from mcp_snapshot_server.tools.transcript_utils import parse_vtt_content
+
+        parsed_data = parse_vtt_content(sample_vtt_content, "test.vtt")
+        transcript_id = mcp_server._generate_transcript_id(sample_vtt_content)
+        transcript_uri = f"transcript://{transcript_id}"
+
+        mcp_server.transcripts[transcript_id] = {
+            "content": sample_vtt_content,
+            "filename": "test.vtt",
+            "parsed_data": parsed_data,
+            "uri": transcript_uri,
+            "source": "zoom",
+            "zoom_metadata": {"topic": "Test Meeting"},
+        }
+
+        result = await mcp_server._call_tool(
+            "read_transcript_content",
+            {"transcript_uri": transcript_uri, "include_timestamps": True},
+        )
+
+        text = result[0].text
+        # Should contain timestamp format [HH:MM:SS.mmm --> HH:MM:SS.mmm]
+        assert "-->" in text
+
+    @pytest.mark.asyncio
+    async def test_read_transcript_content_max_turns(
+        self, mcp_server, sample_vtt_content, test_env_vars
+    ):
+        """Test truncation with max_turns parameter."""
+        from mcp_snapshot_server.tools.transcript_utils import parse_vtt_content
+
+        parsed_data = parse_vtt_content(sample_vtt_content, "test.vtt")
+        transcript_id = mcp_server._generate_transcript_id(sample_vtt_content)
+        transcript_uri = f"transcript://{transcript_id}"
+
+        mcp_server.transcripts[transcript_id] = {
+            "content": sample_vtt_content,
+            "filename": "test.vtt",
+            "parsed_data": parsed_data,
+            "uri": transcript_uri,
+            "source": "zoom",
+            "zoom_metadata": {"topic": "Test Meeting"},
+        }
+
+        result = await mcp_server._call_tool(
+            "read_transcript_content",
+            {"transcript_uri": transcript_uri, "max_turns": 3},
+        )
+
+        text = result[0].text
+        assert "truncated" in text.lower()
+        assert "3 of" in text
+
+    @pytest.mark.asyncio
+    async def test_read_transcript_content_not_found(self, mcp_server, test_env_vars):
+        """Test error when transcript not found."""
+        with pytest.raises(MCPServerError) as exc_info:
+            await mcp_server._call_tool(
+                "read_transcript_content",
+                {"transcript_uri": "transcript://nonexistent"},
+            )
+
+        assert exc_info.value.error_code == ErrorCode.RESOURCE_NOT_FOUND
+        assert "not found" in exc_info.value.message.lower()
+
+    @pytest.mark.asyncio
+    async def test_read_transcript_content_invalid_uri(self, mcp_server, test_env_vars):
+        """Test error for invalid URI format."""
+        with pytest.raises(MCPServerError) as exc_info:
+            await mcp_server._call_tool(
+                "read_transcript_content",
+                {"transcript_uri": "invalid-uri-format"},
+            )
+
+        assert exc_info.value.error_code == ErrorCode.INVALID_INPUT
+        assert "Invalid transcript URI format" in exc_info.value.message
+
+    @pytest.mark.asyncio
+    async def test_read_transcript_content_missing_uri(self, mcp_server, test_env_vars):
+        """Test error when transcript_uri not provided."""
+        with pytest.raises(MCPServerError) as exc_info:
+            await mcp_server._call_tool("read_transcript_content", {})
+
+        assert exc_info.value.error_code == ErrorCode.INVALID_INPUT
+        assert "transcript_uri is required" in exc_info.value.message
+
+    @pytest.mark.asyncio
+    async def test_read_demo_transcript(self, test_env_vars, monkeypatch):
+        """Test reading the demo transcript when DEMO_MODE enabled."""
+        monkeypatch.setenv("DEMO_MODE", "true")
+
+        from mcp_snapshot_server.server import SnapshotMCPServer
+
+        mcp_server = SnapshotMCPServer()
+
+        # Demo transcript should be loaded
+        assert "quest-enterprises-demo" in mcp_server.transcripts
+
+        result = await mcp_server._call_tool(
+            "read_transcript_content",
+            {"transcript_uri": "transcript://quest-enterprises-demo"},
+        )
+
+        text = result[0].text
+        assert "Cached transcript retrieved successfully!" in text
+        assert "quest-enterprises-demo" in text
+        # Check for at least one of the demo speakers
+        assert "Bob Jones" in text or "Franklin Dorsey" in text
+
+    @pytest.mark.asyncio
+    async def test_list_tools_includes_read_transcript(self, mcp_server):
+        """Test that read_transcript_content appears in tool list."""
+        tools = await mcp_server._list_tools()
+        tool_names = [t.name for t in tools]
+
+        assert "read_transcript_content" in tool_names
+
+        read_tool = next(t for t in tools if t.name == "read_transcript_content")
+        assert "transcript_uri" in read_tool.inputSchema["properties"]
+        assert "include_timestamps" in read_tool.inputSchema["properties"]
+        assert "max_turns" in read_tool.inputSchema["properties"]
+        assert "transcript_uri" in read_tool.inputSchema["required"]
+
+
+class TestListAllTranscripts:
+    """Tests for list_all_transcripts tool."""
+
+    @pytest.mark.asyncio
+    async def test_list_all_transcripts_empty_no_zoom(self, test_env_vars, monkeypatch):
+        """Test empty cache with Zoom not configured."""
+        # Ensure Zoom is not configured - must set before settings are loaded
+        monkeypatch.setenv("ZOOM_ACCOUNT_ID", "")
+        monkeypatch.setenv("ZOOM_CLIENT_ID", "")
+        monkeypatch.setenv("ZOOM_CLIENT_SECRET", "")
+        monkeypatch.setenv("DEMO_MODE", "false")
+
+        # Clear cached settings to force reload with new env vars
+        import mcp_snapshot_server.utils.config as config_module
+        if "_settings" in dir(config_module):
+            delattr(config_module, "_settings")
+
+        from mcp_snapshot_server.server import SnapshotMCPServer
+
+        server = SnapshotMCPServer()
+        server.transcripts.clear()
+
+        result = await server._call_tool("list_all_transcripts", {})
+
+        assert len(result) == 1
+        text = result[0].text
+        assert "0 cached" in text
+        assert "Zoom not configured" in text
+        assert "note" in text
+
+    @pytest.mark.asyncio
+    async def test_list_all_transcripts_with_cached(
+        self, mcp_server, sample_vtt_content, test_env_vars
+    ):
+        """Test listing includes manually cached transcripts."""
+        from mcp_snapshot_server.tools.transcript_utils import parse_vtt_content
+
+        parsed_data = parse_vtt_content(sample_vtt_content, "test.vtt")
+        transcript_id = mcp_server._generate_transcript_id(sample_vtt_content)
+
+        mcp_server.transcripts[transcript_id] = {
+            "content": sample_vtt_content,
+            "filename": "test.vtt",
+            "parsed_data": parsed_data,
+            "uri": f"transcript://{transcript_id}",
+            "source": "zoom",
+            "zoom_metadata": {"topic": "Test Meeting", "meeting_id": "123"},
+        }
+
+        result = await mcp_server._call_tool("list_all_transcripts", {})
+
+        text = result[0].text
+        assert transcript_id in text
+        assert "cached_transcripts" in text
+        assert '"location": "cached"' in text
+
+    @pytest.mark.asyncio
+    async def test_list_all_transcripts_demo_mode(self, test_env_vars, monkeypatch):
+        """Test demo transcript appears when DEMO_MODE enabled."""
+        monkeypatch.setenv("DEMO_MODE", "true")
+        monkeypatch.setenv("ZOOM_ACCOUNT_ID", "")
+        monkeypatch.setenv("ZOOM_CLIENT_ID", "")
+        monkeypatch.setenv("ZOOM_CLIENT_SECRET", "")
+
+        # Clear cached settings to force reload with new env vars
+        import mcp_snapshot_server.utils.config as config_module
+        if "_settings" in dir(config_module):
+            delattr(config_module, "_settings")
+
+        from mcp_snapshot_server.server import SnapshotMCPServer
+
+        server = SnapshotMCPServer()
+
+        result = await server._call_tool("list_all_transcripts", {})
+
+        text = result[0].text
+        assert "quest-enterprises-demo" in text
+        assert '"source": "demo"' in text
+        assert "1 cached" in text
+
+    @pytest.mark.asyncio
+    async def test_list_all_transcripts_summary_counts(self, test_env_vars, monkeypatch):
+        """Test summary counts are accurate."""
+        # Ensure Zoom is not configured for predictable test
+        monkeypatch.setenv("ZOOM_ACCOUNT_ID", "")
+        monkeypatch.setenv("ZOOM_CLIENT_ID", "")
+        monkeypatch.setenv("ZOOM_CLIENT_SECRET", "")
+        monkeypatch.setenv("DEMO_MODE", "false")
+
+        # Clear cached settings to force reload with new env vars
+        import mcp_snapshot_server.utils.config as config_module
+        if "_settings" in dir(config_module):
+            delattr(config_module, "_settings")
+
+        from mcp_snapshot_server.server import SnapshotMCPServer
+
+        server = SnapshotMCPServer()
+        server.transcripts.clear()
+
+        # Add exactly 2 cached transcripts
+        server.transcripts["test1"] = {
+            "uri": "transcript://test1",
+            "filename": "test1.vtt",
+            "source": "demo",
+            "parsed_data": None,
+            "demo_metadata": {"topic": "Test 1"},
+        }
+        server.transcripts["test2"] = {
+            "uri": "transcript://test2",
+            "filename": "test2.vtt",
+            "source": "zoom",
+            "parsed_data": None,
+            "zoom_metadata": {"topic": "Test 2", "meeting_id": "456"},
+        }
+
+        result = await server._call_tool("list_all_transcripts", {})
+        text = result[0].text
+
+        assert '"cached_count": 2' in text
+        assert '"zoom_cloud_count": 0' in text
+        assert '"total_available": 2' in text
+
+    @pytest.mark.asyncio
+    async def test_list_all_transcripts_includes_usage_hints(
+        self, mcp_server, test_env_vars
+    ):
+        """Test response includes usage hints."""
+        result = await mcp_server._call_tool("list_all_transcripts", {})
+        text = result[0].text
+
+        assert "Usage:" in text
+        assert "generate_customer_snapshot" in text
+        assert "fetch_zoom_transcript" in text
+
+    @pytest.mark.asyncio
+    async def test_list_tools_includes_list_all_transcripts(self, mcp_server):
+        """Test that list_all_transcripts appears in tool list."""
+        tools = await mcp_server._list_tools()
+        tool_names = [t.name for t in tools]
+
+        assert "list_all_transcripts" in tool_names
+
+        all_tool = next(t for t in tools if t.name == "list_all_transcripts")
+        assert "from_date" in all_tool.inputSchema["properties"]
+        assert "to_date" in all_tool.inputSchema["properties"]
+        assert "search_query" in all_tool.inputSchema["properties"]
+
+    @pytest.mark.asyncio
+    async def test_list_all_transcripts_cached_has_location_field(
+        self, mcp_server, sample_vtt_content, test_env_vars
+    ):
+        """Test cached transcripts have location: cached field."""
+        from mcp_snapshot_server.tools.transcript_utils import parse_vtt_content
+
+        parsed_data = parse_vtt_content(sample_vtt_content, "test.vtt")
+        transcript_id = mcp_server._generate_transcript_id(sample_vtt_content)
+
+        mcp_server.transcripts[transcript_id] = {
+            "content": sample_vtt_content,
+            "filename": "test.vtt",
+            "parsed_data": parsed_data,
+            "uri": f"transcript://{transcript_id}",
+            "source": "zoom",
+            "zoom_metadata": {"topic": "Test Meeting", "meeting_id": "789"},
+        }
+
+        result = await mcp_server._call_tool("list_all_transcripts", {})
+        text = result[0].text
+
+        # Verify the location field is present
+        assert '"location": "cached"' in text

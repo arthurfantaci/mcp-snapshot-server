@@ -14,7 +14,7 @@ Complete API reference for the MCP Snapshot Server.
 
 The server implements all 6 Model Context Protocol primitives:
 
-1. **Tools** - 5 tools for transcript management, Zoom integration, and snapshot generation
+1. **Tools** - 7 tools for transcript management, Zoom integration, and snapshot generation
 2. **Resources** - Transcripts, snapshots, sections, and field definitions
 3. **Prompts** - 11 section prompts + field elicitation prompts
 4. **Sampling** - Claude AI integration with retry logic and confidence scoring
@@ -67,6 +67,82 @@ Returns list of cached transcripts with metadata:
   "total_count": 1
 }
 ```
+
+---
+
+### list_all_transcripts
+
+List all available transcripts from both cached memory and Zoom cloud storage. Provides a unified view for discovering transcripts without making separate calls. Shows which Zoom recordings are already cached.
+
+**Input Schema:**
+```json
+{
+  "type": "object",
+  "properties": {
+    "from_date": {
+      "type": "string",
+      "description": "Start date for Zoom recordings (YYYY-MM-DD). Defaults to 30 days ago."
+    },
+    "to_date": {
+      "type": "string",
+      "description": "End date for Zoom recordings (YYYY-MM-DD). Defaults to today."
+    },
+    "search_query": {
+      "type": "string",
+      "description": "Search query to filter Zoom recordings by topic (case-insensitive)."
+    }
+  }
+}
+```
+
+**Output:**
+Returns combined response with:
+- `cached_transcripts`: Transcripts in server memory (ready to use)
+- `zoom_recordings`: Recordings in Zoom cloud (need fetch_zoom_transcript first)
+- `summary`: Counts for each source and total
+- `note`: (Optional) Message if Zoom not configured
+- `zoom_error`: (Optional) Error message if Zoom API fails
+- `zoom_search_params`: (Optional) Date range and search params used
+
+**Example:**
+```json
+{
+  "cached_transcripts": [
+    {
+      "transcript_id": "quest-enterprises-demo",
+      "uri": "transcript://quest-enterprises-demo",
+      "filename": "quest_enterprises_project_kickoff_transcript.vtt",
+      "source": "demo",
+      "location": "cached",
+      "metadata": {
+        "topic": "Quest Enterprises - Quiznos Analytics...",
+        "duration": 4113
+      },
+      "speakers": ["Bob Jones", "Franklin Dorsey"],
+      "speaker_turns": 133
+    }
+  ],
+  "zoom_recordings": [
+    {
+      "meeting_id": "123456789",
+      "topic": "Customer Meeting",
+      "start_time": "2024-11-23T10:30:00Z",
+      "duration": 3600,
+      "location": "zoom_cloud",
+      "already_cached": false
+    }
+  ],
+  "summary": {
+    "cached_count": 1,
+    "zoom_cloud_count": 1,
+    "total_available": 2
+  }
+}
+```
+
+**Graceful Degradation:**
+- If Zoom credentials not configured: Returns cached transcripts with informative `note` field
+- If Zoom API fails: Returns cached transcripts with `zoom_error` field
 
 ---
 
@@ -130,6 +206,78 @@ Returns:
 - `transcript content`: Full text for immediate analysis
 
 The transcript is cached and exposed as an MCP Resource for querying.
+
+---
+
+### read_transcript_content
+
+Read raw transcript content from a cached transcript without generating a snapshot. Useful for ad-hoc queries, summarization, or inspecting transcript dialogue.
+
+**Input Schema:**
+```json
+{
+  "type": "object",
+  "properties": {
+    "transcript_uri": {
+      "type": "string",
+      "description": "URI of a cached transcript (e.g., 'transcript://quest-enterprises-demo'). Obtain from list_cached_transcripts."
+    },
+    "include_timestamps": {
+      "type": "boolean",
+      "description": "Include VTT timestamps in output. Default: false.",
+      "default": false
+    },
+    "max_turns": {
+      "type": "integer",
+      "description": "Limit number of speaker turns returned. Useful for previewing long transcripts. Returns all if not specified."
+    }
+  },
+  "required": ["transcript_uri"]
+}
+```
+
+**Output:**
+Returns transcript content with metadata:
+- Success message
+- URI reference
+- Metadata JSON (topic, speakers, duration, turn count)
+- Full transcript dialogue (with optional timestamps)
+- Truncation notice if max_turns applied
+
+**Example Response:**
+```
+Cached transcript retrieved successfully!
+
+URI: transcript://quest-enterprises-demo
+
+Metadata:
+{
+  "uri": "transcript://quest-enterprises-demo",
+  "transcript_id": "quest-enterprises-demo",
+  "topic": "Quest Enterprises - Quiznos Analytics Professional Services Engagement Kickoff",
+  "filename": "quest_enterprises_project_kickoff_transcript.vtt",
+  "speakers": ["Bob Jones", "Franklin Dorsey"],
+  "duration": 4113,
+  "speaker_turns": 133,
+  "source": "demo"
+}
+
+--- Transcript Content ---
+Bob Jones: Hi everyone, thanks for joining today...
+Franklin Dorsey: Thanks Bob, excited to get started...
+...
+```
+
+**With Timestamps (`include_timestamps: true`):**
+```
+--- Transcript Content ---
+[00:00:10.190 --> 00:00:13.230] Franklin Dorsey: And it's recording alright perfect.
+[00:00:13.290 --> 00:00:20.840] Bob Jones: Yeah. So we'll take this transcript...
+```
+
+**Error Codes:**
+- `INVALID_INPUT`: Missing transcript_uri or invalid URI format
+- `RESOURCE_NOT_FOUND`: Transcript not in cache
 
 ---
 
