@@ -33,8 +33,18 @@ def mock_transcript_data():
         text="This is a sample transcript about Acme Corporation...",
         speakers=["Alice", "Bob"],
         speaker_turns=[
-            SpeakerTurn(speaker="Alice", text="Welcome to the meeting.", start="00:00:00.000", end="00:00:05.000"),
-            SpeakerTurn(speaker="Bob", text="Thank you for having us.", start="00:00:05.000", end="00:00:10.000"),
+            SpeakerTurn(
+                speaker="Alice",
+                text="Welcome to the meeting.",
+                start="00:00:00.000",
+                end="00:00:05.000",
+            ),
+            SpeakerTurn(
+                speaker="Bob",
+                text="Thank you for having us.",
+                start="00:00:05.000",
+                end="00:00:10.000",
+            ),
         ],
         duration=300.0,
         metadata=TranscriptMetadata(vtt_filename="sample.vtt"),

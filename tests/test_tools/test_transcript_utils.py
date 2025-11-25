@@ -254,7 +254,10 @@ class TestGetTranscriptSummary:
             speakers=["Alice", "Bob", "Charlie"],
             speaker_turns=[
                 SpeakerTurn(
-                    speaker="Alice", text="Hello", start="00:00:00.000", end="00:00:05.000"
+                    speaker="Alice",
+                    text="Hello",
+                    start="00:00:00.000",
+                    end="00:00:05.000",
                 )
                 for _ in range(10)
             ],

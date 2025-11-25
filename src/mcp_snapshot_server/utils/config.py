@@ -4,11 +4,13 @@ This module provides comprehensive configuration settings for the entire applica
 organized into logical groups using Pydantic Settings.
 """
 
+from __future__ import annotations
+
 import logging
-from typing import Self
 
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from typing_extensions import Self
 
 # Valid logging levels
 VALID_LOG_LEVELS = {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}
@@ -230,17 +232,14 @@ class ZoomSettings(BaseSettings):
         default="", description="Zoom account ID for Server-to-Server OAuth"
     )
 
-    client_id: str = Field(
-        default="", description="Zoom OAuth client ID"
-    )
+    client_id: str = Field(default="", description="Zoom OAuth client ID")
 
-    client_secret: str = Field(
-        default="", description="Zoom OAuth client secret"
-    )
+    client_secret: str = Field(default="", description="Zoom OAuth client secret")
 
     # API settings
     default_user_id: str = Field(
-        default="me", description="Default user ID for API calls (me = authenticated user)"
+        default="me",
+        description="Default user ID for API calls (me = authenticated user)",
     )
 
     api_timeout: int = Field(
@@ -350,6 +349,9 @@ class Settings:
         return self.zoom.is_configured
 
 
+_settings: Settings | None = None
+
+
 def get_settings() -> Settings:
     """Get or create global settings instance.
 
@@ -357,6 +359,6 @@ def get_settings() -> Settings:
         Settings instance
     """
     global _settings
-    if "_settings" not in globals():
+    if _settings is None:
         _settings = Settings()
     return _settings

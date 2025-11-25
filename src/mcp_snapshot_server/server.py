@@ -41,7 +41,7 @@ from mcp_snapshot_server.utils.logging_config import ContextLogger
 class SnapshotMCPServer:
     """MCP Server for Customer Success Snapshot generation."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the MCP server."""
         self.server = Server("mcp-snapshot-server")
         self.settings = get_settings()
@@ -64,7 +64,7 @@ class SnapshotMCPServer:
         # Load demo transcript if enabled
         self.logger.info(
             "Checking demo mode configuration",
-            extra={"demo_mode": self.settings.demo.mode}
+            extra={"demo_mode": self.settings.demo.mode},
         )
         if self.settings.demo.mode:
             self.logger.info("Demo mode enabled, loading demo transcript")
@@ -74,10 +74,10 @@ class SnapshotMCPServer:
 
         self.logger.info(
             "MCP Snapshot Server initialized",
-            extra={"transcripts_loaded": len(self.transcripts)}
+            extra={"transcripts_loaded": len(self.transcripts)},
         )
 
-    def _register_handlers(self):
+    def _register_handlers(self) -> None:
         """Register all MCP primitive handlers."""
         # Tools primitive
         self.server.list_tools()(self._list_tools)
@@ -93,7 +93,7 @@ class SnapshotMCPServer:
 
         self.logger.info("MCP handlers registered")
 
-    def _load_demo_transcript(self):
+    def _load_demo_transcript(self) -> None:
         """Load Quest Enterprises demo transcript for demonstrations.
 
         This method loads the Quest Enterprises fixture transcript into memory
@@ -103,18 +103,22 @@ class SnapshotMCPServer:
         from mcp_snapshot_server.tools.transcript_utils import parse_vtt_content
 
         # Path to demo transcript fixture
-        fixture_path = Path(__file__).parent.parent.parent / "tests" / "fixtures" / "quest_enterprises_project_kickoff_transcript.vtt"
+        fixture_path = (
+            Path(__file__).parent.parent.parent
+            / "tests"
+            / "fixtures"
+            / "quest_enterprises_project_kickoff_transcript.vtt"
+        )
 
         if not fixture_path.exists():
             self.logger.warning(
-                "Demo transcript file not found",
-                extra={"path": str(fixture_path)}
+                "Demo transcript file not found", extra={"path": str(fixture_path)}
             )
             return
 
         try:
             # Read VTT content
-            with open(fixture_path, 'r', encoding='utf-8') as f:
+            with open(fixture_path, encoding="utf-8") as f:
                 vtt_content = f.read()
 
             # Parse VTT content
@@ -137,8 +141,8 @@ class SnapshotMCPServer:
                     "topic": "Quest Enterprises - Quiznos Analytics Professional Services Engagement Kickoff",
                     "start_time": "2024-07-14T09:00:00Z",
                     "duration": 4113,  # ~68 minutes
-                    "description": "Demo transcript for testing and demonstrations"
-                }
+                    "description": "Demo transcript for testing and demonstrations",
+                },
             }
 
             self.logger.info(
@@ -147,14 +151,14 @@ class SnapshotMCPServer:
                     "transcript_id": transcript_id,
                     "uri": transcript_uri,
                     "speakers": len(parsed_data.speakers),
-                    "vtt_filename": filename
-                }
+                    "vtt_filename": filename,
+                },
             )
 
         except Exception as e:
             self.logger.error(
                 "Failed to load demo transcript",
-                extra={"error": str(e), "path": str(fixture_path)}
+                extra={"error": str(e), "path": str(fixture_path)},
             )
 
     # ==================== Tools Primitive ====================
@@ -345,7 +349,9 @@ class SnapshotMCPServer:
         content_hash = hashlib.sha256(vtt_content.encode()).hexdigest()
         return content_hash[:12]  # Use first 12 chars for readability
 
-    async def _list_cached_transcripts(self, arguments: dict[str, Any]) -> list[TextContent]:
+    async def _list_cached_transcripts(
+        self, arguments: dict[str, Any]
+    ) -> list[TextContent]:
         """List all transcripts currently cached in server memory.
 
         Args:
@@ -382,7 +388,10 @@ class SnapshotMCPServer:
             }
 
             # Add source-specific metadata
-            if transcript_data.get("source") == "zoom" and "zoom_metadata" in transcript_data:
+            if (
+                transcript_data.get("source") == "zoom"
+                and "zoom_metadata" in transcript_data
+            ):
                 zoom_meta = transcript_data["zoom_metadata"]
                 transcript_info["metadata"] = {
                     "meeting_id": zoom_meta.get("meeting_id"),
@@ -390,7 +399,10 @@ class SnapshotMCPServer:
                     "start_time": zoom_meta.get("start_time"),
                     "duration": zoom_meta.get("duration"),
                 }
-            elif transcript_data.get("source") == "demo" and "demo_metadata" in transcript_data:
+            elif (
+                transcript_data.get("source") == "demo"
+                and "demo_metadata" in transcript_data
+            ):
                 demo_meta = transcript_data["demo_metadata"]
                 transcript_info["metadata"] = {
                     "topic": demo_meta.get("topic"),
@@ -429,7 +441,9 @@ class SnapshotMCPServer:
             )
         ]
 
-    async def _list_all_transcripts(self, arguments: dict[str, Any]) -> list[TextContent]:
+    async def _list_all_transcripts(
+        self, arguments: dict[str, Any]
+    ) -> list[TextContent]:
         """List all available transcripts from cached memory and Zoom cloud.
 
         Aggregates results from both sources, handling missing Zoom credentials gracefully.
@@ -467,7 +481,10 @@ class SnapshotMCPServer:
             }
 
             # Add source-specific metadata
-            if transcript_data.get("source") == "zoom" and "zoom_metadata" in transcript_data:
+            if (
+                transcript_data.get("source") == "zoom"
+                and "zoom_metadata" in transcript_data
+            ):
                 zoom_meta = transcript_data["zoom_metadata"]
                 transcript_info["metadata"] = {
                     "meeting_id": zoom_meta.get("meeting_id"),
@@ -475,7 +492,10 @@ class SnapshotMCPServer:
                     "start_time": zoom_meta.get("start_time"),
                     "duration": zoom_meta.get("duration"),
                 }
-            elif transcript_data.get("source") == "demo" and "demo_metadata" in transcript_data:
+            elif (
+                transcript_data.get("source") == "demo"
+                and "demo_metadata" in transcript_data
+            ):
                 demo_meta = transcript_data["demo_metadata"]
                 transcript_info["metadata"] = {
                     "topic": demo_meta.get("topic"),
@@ -533,16 +553,18 @@ class SnapshotMCPServer:
                 # Format Zoom recordings
                 for meeting in meetings:
                     meeting_id = str(meeting.get("id"))
-                    zoom_recordings.append({
-                        "meeting_id": meeting_id,
-                        "uuid": meeting.get("uuid"),
-                        "topic": meeting.get("topic"),
-                        "start_time": meeting.get("start_time"),
-                        "duration": meeting.get("duration"),
-                        "recording_count": meeting.get("recording_count"),
-                        "location": "zoom_cloud",
-                        "already_cached": meeting_id in cached_meeting_ids,
-                    })
+                    zoom_recordings.append(
+                        {
+                            "meeting_id": meeting_id,
+                            "uuid": meeting.get("uuid"),
+                            "topic": meeting.get("topic"),
+                            "start_time": meeting.get("start_time"),
+                            "duration": meeting.get("duration"),
+                            "recording_count": meeting.get("recording_count"),
+                            "location": "zoom_cloud",
+                            "already_cached": meeting_id in cached_meeting_ids,
+                        }
+                    )
 
                 zoom_metadata = {
                     "from_date": result["from_date"],
@@ -675,7 +697,11 @@ class SnapshotMCPServer:
 
         self.logger.info(
             "Generating snapshot",
-            extra={"filename": filename, "format": output_format, "content_length": len(vtt_content) if vtt_content else 0},
+            extra={
+                "filename": filename,
+                "format": output_format,
+                "content_length": len(vtt_content) if vtt_content else 0,
+            },
         )
 
         try:
@@ -734,7 +760,9 @@ class SnapshotMCPServer:
                 details={"filename": filename, "error": str(e)},
             ) from e
 
-    async def _list_zoom_recordings(self, arguments: dict[str, Any]) -> list[TextContent]:
+    async def _list_zoom_recordings(
+        self, arguments: dict[str, Any]
+    ) -> list[TextContent]:
         """List Zoom cloud recordings with transcripts.
 
         Args:
@@ -786,14 +814,16 @@ class SnapshotMCPServer:
             # Format response
             recordings_list = []
             for meeting in meetings:
-                recordings_list.append({
-                    "meeting_id": str(meeting.get("id")),
-                    "uuid": meeting.get("uuid"),
-                    "topic": meeting.get("topic"),
-                    "start_time": meeting.get("start_time"),
-                    "duration": meeting.get("duration"),
-                    "recording_count": meeting.get("recording_count"),
-                })
+                recordings_list.append(
+                    {
+                        "meeting_id": str(meeting.get("id")),
+                        "uuid": meeting.get("uuid"),
+                        "topic": meeting.get("topic"),
+                        "start_time": meeting.get("start_time"),
+                        "duration": meeting.get("duration"),
+                        "recording_count": meeting.get("recording_count"),
+                    }
+                )
 
             response_data = {
                 "recordings": recordings_list,
@@ -819,14 +849,19 @@ class SnapshotMCPServer:
         except MCPServerError:
             raise
         except Exception as e:
-            self.logger.error(f"Failed to list Zoom recordings: {e}", extra={"error_type": type(e).__name__})
+            self.logger.error(
+                f"Failed to list Zoom recordings: {e}",
+                extra={"error_type": type(e).__name__},
+            )
             raise MCPServerError(
                 error_code=ErrorCode.ZOOM_API_ERROR,
                 message=f"Failed to list Zoom recordings: {str(e)}",
                 details={"error": str(e), "error_type": type(e).__name__},
             ) from e
 
-    async def _fetch_zoom_transcript(self, arguments: dict[str, Any]) -> list[TextContent]:
+    async def _fetch_zoom_transcript(
+        self, arguments: dict[str, Any]
+    ) -> list[TextContent]:
         """Fetch a Zoom transcript and cache it in server memory.
 
         Args:
@@ -835,13 +870,13 @@ class SnapshotMCPServer:
         Returns:
             Transcript URI and metadata that can be used for querying or snapshot generation
         """
+        from mcp_snapshot_server.tools.transcript_utils import parse_vtt_content
         from mcp_snapshot_server.tools.zoom_api import (
             ZoomAPIManager,
             download_transcript_content,
             find_transcript_file,
             get_meeting_recordings,
         )
-        from mcp_snapshot_server.tools.transcript_utils import parse_vtt_content
 
         meeting_id = arguments.get("meeting_id")
 
@@ -872,7 +907,10 @@ class SnapshotMCPServer:
                 raise MCPServerError(
                     error_code=ErrorCode.TRANSCRIPT_NOT_AVAILABLE,
                     message=f"No VTT transcript found for meeting {meeting_id}. The meeting may not have a transcript, or it may still be processing.",
-                    details={"meeting_id": meeting_id, "recording_files_count": len(recording_files)},
+                    details={
+                        "meeting_id": meeting_id,
+                        "recording_files_count": len(recording_files),
+                    },
                 )
 
             # Check if transcript is still processing
@@ -880,7 +918,10 @@ class SnapshotMCPServer:
                 raise MCPServerError(
                     error_code=ErrorCode.TRANSCRIPT_PROCESSING,
                     message=f"Transcript is still processing for meeting {meeting_id}. Status: {transcript_file.get('status')}",
-                    details={"meeting_id": meeting_id, "status": transcript_file.get("status")},
+                    details={
+                        "meeting_id": meeting_id,
+                        "status": transcript_file.get("status"),
+                    },
                 )
 
             # Download transcript content
@@ -947,7 +988,7 @@ class SnapshotMCPServer:
             return [
                 TextContent(
                     type="text",
-                    text=f"Zoom transcript fetched and cached successfully!\n\n"
+                    text="Zoom transcript fetched and cached successfully!\n\n"
                     + f"URI: {transcript_uri}\n\n"
                     + "Metadata:\n"
                     + json.dumps(response, indent=2)
@@ -967,10 +1008,16 @@ class SnapshotMCPServer:
             raise MCPServerError(
                 error_code=ErrorCode.ZOOM_API_ERROR,
                 message=f"Failed to download Zoom transcript: {str(e)}",
-                details={"meeting_id": meeting_id, "error": str(e), "error_type": type(e).__name__},
+                details={
+                    "meeting_id": meeting_id,
+                    "error": str(e),
+                    "error_type": type(e).__name__,
+                },
             ) from e
 
-    async def _read_transcript_content(self, arguments: dict[str, Any]) -> list[TextContent]:
+    async def _read_transcript_content(
+        self, arguments: dict[str, Any]
+    ) -> list[TextContent]:
         """Read raw transcript content from a cached transcript.
 
         Args:
@@ -1096,7 +1143,9 @@ class SnapshotMCPServer:
 
         return [TextContent(type="text", text="\n".join(response_parts))]
 
-    async def _generate_snapshot_from_zoom(self, arguments: dict[str, Any]) -> list[TextContent]:
+    async def _generate_snapshot_from_zoom(
+        self, arguments: dict[str, Any]
+    ) -> list[TextContent]:
         """Download Zoom transcript and generate snapshot in one step.
 
         Args:
@@ -1122,7 +1171,9 @@ class SnapshotMCPServer:
 
         try:
             # Step 1: Fetch transcript
-            download_result = await self._fetch_zoom_transcript({"meeting_id": meeting_id})
+            download_result = await self._fetch_zoom_transcript(
+                {"meeting_id": meeting_id}
+            )
 
             # Extract transcript_uri from the download result
             # The result text contains JSON with the URI
@@ -1136,10 +1187,12 @@ class SnapshotMCPServer:
             transcript_uri = download_data["uri"]
 
             # Step 2: Generate snapshot
-            snapshot_result = await self._generate_snapshot({
-                "transcript_uri": transcript_uri,
-                "output_format": output_format,
-            })
+            snapshot_result = await self._generate_snapshot(
+                {
+                    "transcript_uri": transcript_uri,
+                    "output_format": output_format,
+                }
+            )
 
             self.logger.info(
                 "Snapshot generated from Zoom meeting successfully",
@@ -1158,7 +1211,11 @@ class SnapshotMCPServer:
             raise MCPServerError(
                 error_code=ErrorCode.INTERNAL_ERROR,
                 message=f"Failed to generate snapshot from Zoom: {str(e)}",
-                details={"meeting_id": meeting_id, "error": str(e), "error_type": type(e).__name__},
+                details={
+                    "meeting_id": meeting_id,
+                    "error": str(e),
+                    "error_type": type(e).__name__,
+                },
             ) from e
 
     def _format_as_markdown(self, snapshot: dict[str, Any]) -> str:
@@ -1215,7 +1272,10 @@ class SnapshotMCPServer:
         # Add transcript resources
         for transcript_id, transcript_data in self.transcripts.items():
             # Build description based on source
-            if transcript_data.get("source") == "zoom" and "zoom_metadata" in transcript_data:
+            if (
+                transcript_data.get("source") == "zoom"
+                and "zoom_metadata" in transcript_data
+            ):
                 zoom_meta = transcript_data["zoom_metadata"]
                 topic = zoom_meta.get("topic", "Unknown Meeting")
                 start_time = zoom_meta.get("start_time", "")
@@ -1223,12 +1283,17 @@ class SnapshotMCPServer:
                 date_str = start_time.split("T")[0] if start_time else "Unknown date"
                 description = f"Zoom meeting: {topic} ({date_str})"
                 name = f"Zoom: {topic}"
-            elif transcript_data.get("source") == "demo" and "demo_metadata" in transcript_data:
+            elif (
+                transcript_data.get("source") == "demo"
+                and "demo_metadata" in transcript_data
+            ):
                 demo_meta = transcript_data["demo_metadata"]
                 topic = demo_meta.get("topic", "Demo Transcript")
                 start_time = demo_meta.get("start_time", "")
                 date_str = start_time.split("T")[0] if start_time else ""
-                description = f"Demo transcript: {topic}" + (f" ({date_str})" if date_str else "")
+                description = f"Demo transcript: {topic}" + (
+                    f" ({date_str})" if date_str else ""
+                )
                 name = f"Demo: {topic}"
             else:
                 description = f"VTT transcript: {transcript_data['filename']}"
@@ -1236,7 +1301,7 @@ class SnapshotMCPServer:
 
             resources.append(
                 Resource(
-                    uri=f"transcript://{transcript_id}",
+                    uri=f"transcript://{transcript_id}",  # type: ignore[arg-type]
                     name=name,
                     description=description,
                     mimeType="text/vtt",
@@ -1247,7 +1312,7 @@ class SnapshotMCPServer:
         for snapshot_id in self.snapshots:
             resources.append(
                 Resource(
-                    uri=f"snapshot://{snapshot_id}",
+                    uri=f"snapshot://{snapshot_id}",  # type: ignore[arg-type]
                     name=f"Snapshot: {snapshot_id}",
                     description=f"Complete customer success snapshot for {snapshot_id}",
                     mimeType="application/json",
@@ -1260,7 +1325,7 @@ class SnapshotMCPServer:
                 section_slug = section_name.lower().replace(" ", "_")
                 resources.append(
                     Resource(
-                        uri=f"snapshot://{snapshot_id}/section/{section_slug}",
+                        uri=f"snapshot://{snapshot_id}/section/{section_slug}",  # type: ignore[arg-type]
                         name=f"{snapshot_id} - {section_name}",
                         description=f"{section_name} section from snapshot {snapshot_id}",
                         mimeType="text/plain",
@@ -1271,7 +1336,7 @@ class SnapshotMCPServer:
         for field_name in FIELD_DEFINITIONS:
             resources.append(
                 Resource(
-                    uri=f"field://{field_name}",
+                    uri=f"field://{field_name}",  # type: ignore[arg-type]
                     name=f"Field: {field_name}",
                     description=f"Definition for {field_name} field",
                     mimeType="application/json",
@@ -1343,7 +1408,10 @@ class SnapshotMCPServer:
         }
 
         # Include Zoom-specific metadata if this is from Zoom
-        if transcript_data.get("source") == "zoom" and "zoom_metadata" in transcript_data:
+        if (
+            transcript_data.get("source") == "zoom"
+            and "zoom_metadata" in transcript_data
+        ):
             response["zoom_metadata"] = transcript_data["zoom_metadata"]
 
         # Include full parsed data for detailed analysis if needed
@@ -1562,7 +1630,7 @@ Could you please provide this information?"""
 
     # ==================== Server Lifecycle ====================
 
-    async def run(self):
+    async def run(self) -> None:
         """Run the MCP server using stdio transport."""
         self.logger.info("Starting MCP Snapshot Server")
 
@@ -1574,15 +1642,16 @@ Could you please provide this information?"""
             )
 
 
-async def async_main():
+async def async_main() -> None:
     """Async main function for the MCP server."""
     server = SnapshotMCPServer()
     await server.run()
 
 
-def main():
+def main() -> None:
     """Synchronous entry point for the MCP server (called by script entry point)."""
     import asyncio
+
     from mcp_snapshot_server.utils.logging_config import setup_logging
 
     # Initialize logging

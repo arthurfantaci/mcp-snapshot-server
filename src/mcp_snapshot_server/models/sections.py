@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from pydantic import Field
 
 from mcp_snapshot_server.models.base import SnapshotBaseModel
 from mcp_snapshot_server.models.validation import ValidationResult
+
+if TYPE_CHECKING:
+    from mcp_snapshot_server.models.analysis import AnalysisResult
 
 
 class SectionMetadata(SnapshotBaseModel):

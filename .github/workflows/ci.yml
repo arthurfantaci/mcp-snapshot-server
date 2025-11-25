@@ -1,0 +1,145 @@
+# =============================================================================
+# GitHub Actions CI Workflow for MCP Snapshot Server
+# =============================================================================
+# This workflow runs on every pull request to ensure code quality and tests pass
+# before changes can be merged into the main branch.
+#
+# What this workflow does:
+#   1. Linting: Checks code style and formatting with Ruff
+#   2. Type Checking: Verifies type annotations with MyPy
+#   3. Testing: Runs the test suite across multiple Python versions
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# WORKFLOW NAME
+# -----------------------------------------------------------------------------
+# This name appears in the GitHub Actions tab and in PR status checks.
+name: CI
+
+# -----------------------------------------------------------------------------
+# TRIGGERS (Events)
+# -----------------------------------------------------------------------------
+# The 'on' key defines when this workflow runs.
+on:
+  pull_request:
+    # Only run on PRs targeting the main branch
+    branches:
+      - main
+
+    # Only run when relevant files change (saves CI minutes)
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'pyproject.toml'
+      - '.github/workflows/ci.yml'
+
+# -----------------------------------------------------------------------------
+# CONCURRENCY
+# -----------------------------------------------------------------------------
+# Prevents multiple workflow runs for the same PR from running simultaneously.
+# When you push new commits to a PR, it cancels the previous run.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+# -----------------------------------------------------------------------------
+# JOBS
+# -----------------------------------------------------------------------------
+jobs:
+
+  # ===========================================================================
+  # JOB 1: LINTING AND FORMATTING
+  # ===========================================================================
+  lint:
+    name: Lint & Format
+    runs-on: ubuntu-latest
+
+    steps:
+      # Clone your repository into the runner
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Install UV package manager with caching
+      - name: Install UV
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: "pyproject.toml"
+
+      # Install Python (single version for linting)
+      - name: Set up Python
+        run: uv python install 3.12
+
+      # Install project dependencies
+      - name: Install dependencies
+        run: uv sync --frozen --dev
+
+      # Check for code style issues
+      - name: Run Ruff linter
+        run: uv run ruff check src/ tests/
+
+      # Verify code is properly formatted
+      - name: Check code formatting
+        run: uv run ruff format --check --diff src/ tests/
+
+  # ===========================================================================
+  # JOB 2: TYPE CHECKING
+  # ===========================================================================
+  type-check:
+    name: Type Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install UV
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: "pyproject.toml"
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install dependencies
+        run: uv sync --frozen --dev
+
+      # Check type annotations
+      - name: Run MyPy
+        run: uv run mypy src/
+
+  # ===========================================================================
+  # JOB 3: TESTING (with Matrix Strategy)
+  # ===========================================================================
+  test:
+    name: Test (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+
+    # Matrix creates multiple parallel job instances
+    strategy:
+      fail-fast: false  # Run all versions even if one fails
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install UV
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: "pyproject.toml"
+          cache-suffix: ${{ matrix.python-version }}
+
+      # Install the Python version from matrix
+      - name: Set up Python ${{ matrix.python-version }}
+        run: uv python install ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: uv sync --frozen --dev
+
+      # Run pytest
+      - name: Run tests
+        run: uv run pytest tests/ -v --tb=short

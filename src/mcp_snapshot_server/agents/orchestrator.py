@@ -5,7 +5,7 @@ Snapshot from a VTT transcript file.
 """
 
 import asyncio
-from typing import Any
+from typing import cast
 
 from mcp_snapshot_server.agents.analyzer import AnalysisAgent
 from mcp_snapshot_server.agents.base import BaseAgent
@@ -32,7 +32,7 @@ from mcp_snapshot_server.utils.errors import ErrorCode, MCPServerError
 from mcp_snapshot_server.utils.logging_config import ContextLogger
 
 
-class OrchestrationAgent(BaseAgent):
+class OrchestrationAgent(BaseAgent[OrchestrationInput, SnapshotOutput]):
     """Agent responsible for orchestrating the complete snapshot generation workflow."""
 
     # Define the 11 section names in order
@@ -172,7 +172,9 @@ class OrchestrationAgent(BaseAgent):
                 details={"filename": filename, "error": str(e)},
             ) from e
 
-    def _parse_transcript(self, vtt_content: str, filename: str = "transcript.vtt") -> TranscriptData:
+    def _parse_transcript(
+        self, vtt_content: str, filename: str = "transcript.vtt"
+    ) -> TranscriptData:
         """Parse VTT transcript content.
 
         Args:
@@ -182,7 +184,10 @@ class OrchestrationAgent(BaseAgent):
         Returns:
             Parsed TranscriptData model
         """
-        self.logger.info("Parsing VTT transcript", extra={"filename": filename, "content_length": len(vtt_content)})
+        self.logger.info(
+            "Parsing VTT transcript",
+            extra={"filename": filename, "content_length": len(vtt_content)},
+        )
 
         try:
             transcript_data = parse_vtt_content(vtt_content, filename)
@@ -315,7 +320,7 @@ class OrchestrationAgent(BaseAgent):
                     error=str(result),
                 )
             else:
-                sections[section_name] = result
+                sections[section_name] = cast("SectionResult", result)
 
         return sections
 
@@ -369,9 +374,7 @@ class OrchestrationAgent(BaseAgent):
         self.logger.info("Validating sections", extra={"section_count": len(sections)})
 
         # Convert SectionResult models to dict for validation
-        sections_dict = {
-            name: result.model_dump() for name, result in sections.items()
-        }
+        sections_dict = {name: result.model_dump() for name, result in sections.items()}
         validation_input = ValidationInput(sections=sections_dict)
         validation_results = await self.validation_agent.process(validation_input)
 

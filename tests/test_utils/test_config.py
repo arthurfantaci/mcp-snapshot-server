@@ -54,7 +54,9 @@ class TestMCPServerSettings:
         with pytest.raises(ValidationError, match="Server name cannot be empty"):
             MCPServerSettings()
 
-    def test_server_name_strips_whitespace(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_server_name_strips_whitespace(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Test server name whitespace is stripped."""
         monkeypatch.setenv("MCP_SERVER_NAME", "  my-server  ")
         settings = MCPServerSettings()
@@ -94,12 +96,12 @@ class TestLLMSettings:
         """Test temperature value validation."""
         # Temperature too high
         monkeypatch.setenv("LLM_TEMPERATURE", "2.0")
-        with pytest.raises(Exception):  # Pydantic ValidationError
+        with pytest.raises(ValidationError):
             LLMSettings()
 
         # Temperature too low
         monkeypatch.setenv("LLM_TEMPERATURE", "-0.1")
-        with pytest.raises(Exception):  # Pydantic ValidationError
+        with pytest.raises(ValidationError):
             LLMSettings()
 
 
@@ -126,7 +128,7 @@ class TestWorkflowSettings:
         """Test confidence threshold validation."""
         # Threshold too high
         monkeypatch.setenv("WORKFLOW_MIN_CONFIDENCE_THRESHOLD", "1.5")
-        with pytest.raises(Exception):  # Pydantic ValidationError
+        with pytest.raises(ValidationError):
             WorkflowSettings()
 
     def test_output_format_validation(self, monkeypatch: pytest.MonkeyPatch) -> None:

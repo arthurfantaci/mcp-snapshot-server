@@ -51,8 +51,10 @@ class ValidationResult(SnapshotBaseModel):
             quality=self.quality and other.quality,
             issues=self.issues + other.issues,
             improvements=self.improvements + other.improvements,
-            requires_improvements=self.requires_improvements or other.requires_improvements,
-            missing_critical_info=self.missing_critical_info + other.missing_critical_info,
+            requires_improvements=self.requires_improvements
+            or other.requires_improvements,
+            missing_critical_info=self.missing_critical_info
+            + other.missing_critical_info,
         )
 
 

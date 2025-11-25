@@ -6,7 +6,7 @@ meeting recordings and transcripts using Server-to-Server OAuth authentication.
 
 import logging
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any, cast
 from urllib.parse import quote
 
 import httpx
@@ -52,9 +52,12 @@ class ZoomAPIManager:
             MCPServerError: If token request fails
         """
         # Check if we have a valid cached token
-        if self._access_token and self._token_expiry:
-            if datetime.now() < self._token_expiry:
-                return self._access_token
+        if (
+            self._access_token
+            and self._token_expiry
+            and datetime.now() < self._token_expiry
+        ):
+            return self._access_token
 
         # Request new token
         token_url = "https://zoom.us/oauth/token"
@@ -67,7 +70,10 @@ class ZoomAPIManager:
                         "grant_type": "account_credentials",
                         "account_id": self.settings.zoom.account_id,
                     },
-                    auth=(self.settings.zoom.client_id, self.settings.zoom.client_secret),
+                    auth=(
+                        self.settings.zoom.client_id,
+                        self.settings.zoom.client_secret,
+                    ),
                     headers={"Content-Type": "application/x-www-form-urlencoded"},
                 )
                 response.raise_for_status()
@@ -77,9 +83,13 @@ class ZoomAPIManager:
                 expires_in = data.get("expires_in", 3600)  # Default 1 hour
 
                 # Set expiry to 5 minutes before actual expiry for safety
-                self._token_expiry = datetime.now() + timedelta(seconds=expires_in - 300)
+                self._token_expiry = datetime.now() + timedelta(
+                    seconds=expires_in - 300
+                )
 
-                logger.info(f"Obtained new Zoom access token (expires in {expires_in}s)")
+                logger.info(
+                    f"Obtained new Zoom access token (expires in {expires_in}s)"
+                )
                 return self._access_token
 
         except httpx.HTTPStatusError as e:
@@ -122,11 +132,13 @@ class ZoomAPIManager:
             MCPServerError: If request fails
         """
         # Validate credentials are configured
-        if not all([
-            self.settings.zoom.account_id,
-            self.settings.zoom.client_id,
-            self.settings.zoom.client_secret,
-        ]):
+        if not all(
+            [
+                self.settings.zoom.account_id,
+                self.settings.zoom.client_id,
+                self.settings.zoom.client_secret,
+            ]
+        ):
             raise MCPServerError(
                 error_code=ErrorCode.ZOOM_NOT_CONFIGURED,
                 message="Zoom API credentials not configured. Set ZOOM_ACCOUNT_ID, ZOOM_CLIENT_ID, and ZOOM_CLIENT_SECRET.",
@@ -154,7 +166,7 @@ class ZoomAPIManager:
                     timeout=self.settings.zoom.api_timeout,
                 )
                 response.raise_for_status()
-                return response.json()
+                return cast("dict[str, Any]", response.json())
 
         except httpx.HTTPStatusError as e:
             # Try to parse Zoom's error response
@@ -179,11 +191,13 @@ class ZoomAPIManager:
                     error_message += f": {zoom_error_msg}"
             except Exception:
                 # If we can't parse JSON, use the raw response
-                error_message = f"Zoom API request failed: HTTP {e.response.status_code}"
+                error_message = (
+                    f"Zoom API request failed: HTTP {e.response.status_code}"
+                )
 
             logger.error(
                 error_message,
-                extra={"status_code": e.response.status_code, "endpoint": endpoint}
+                extra={"status_code": e.response.status_code, "endpoint": endpoint},
             )
 
             raise MCPServerError(
@@ -196,7 +210,11 @@ class ZoomAPIManager:
             raise MCPServerError(
                 error_code=ErrorCode.ZOOM_API_ERROR,
                 message=f"Zoom API request failed: {str(e)}",
-                details={"endpoint": endpoint, "error": str(e), "error_type": type(e).__name__},
+                details={
+                    "endpoint": endpoint,
+                    "error": str(e),
+                    "error_type": type(e).__name__,
+                },
             ) from e
 
     @property
@@ -210,7 +228,9 @@ class ZoomAPIManager:
             ttl = self.settings.zoom.cache_ttl_seconds
             maxsize = self.settings.zoom.max_cache_size
             self._recordings_cache = TTLCache(maxsize=maxsize, ttl=ttl)
-            logger.info(f"Recordings cache initialized (TTL: {ttl}s, max size: {maxsize})")
+            logger.info(
+                f"Recordings cache initialized (TTL: {ttl}s, max size: {maxsize})"
+            )
 
         return self._recordings_cache
 
@@ -274,7 +294,7 @@ async def list_user_recordings(
     cache_key = manager._get_cache_key(from_date, to_date)
     if cache_key in manager.recordings_cache:
         logger.info("Returning cached recordings list", extra={"cache_key": cache_key})
-        return manager.recordings_cache[cache_key]
+        return cast("dict[str, Any]", manager.recordings_cache[cache_key])
 
     try:
         # Make API request to list recordings
@@ -321,7 +341,10 @@ async def list_user_recordings(
         return result
 
     except Exception as e:
-        logger.error(f"Failed to list Zoom recordings: {e}", extra={"error_type": type(e).__name__})
+        logger.error(
+            f"Failed to list Zoom recordings: {e}",
+            extra={"error_type": type(e).__name__},
+        )
         raise MCPServerError(
             error_code=ErrorCode.ZOOM_API_ERROR,
             message=f"Failed to list Zoom recordings: {str(e)}",
@@ -355,11 +378,11 @@ def encode_meeting_id(meeting_id: str) -> str:
         return meeting_id_str
 
     # If UUID contains / or //, use double encoding
-    if '/' in meeting_id_str:
-        return quote(quote(meeting_id_str, safe=''), safe='')
+    if "/" in meeting_id_str:
+        return quote(quote(meeting_id_str, safe=""), safe="")
 
     # For other UUIDs with special characters, use single encoding
-    return quote(meeting_id_str, safe='')
+    return quote(meeting_id_str, safe="")
 
 
 @retry_on_error(max_retries=3, delay=1.0, backoff=2.0)
@@ -386,7 +409,7 @@ async def get_meeting_recordings(
 
         logger.debug(
             "Encoded meeting ID",
-            extra={"original": meeting_id, "encoded": encoded_meeting_id}
+            extra={"original": meeting_id, "encoded": encoded_meeting_id},
         )
 
         # Make API request to get meeting recordings
@@ -444,7 +467,9 @@ async def download_transcript_content(
     Raises:
         MCPServerError: If download fails
     """
-    logger.info("Downloading transcript content", extra={"url_length": len(download_url)})
+    logger.info(
+        "Downloading transcript content", extra={"url_length": len(download_url)}
+    )
 
     try:
         async with httpx.AsyncClient() as client:
@@ -488,7 +513,10 @@ async def download_transcript_content(
         ) from e
 
     except Exception as e:
-        logger.error(f"Failed to download transcript: {e}", extra={"error_type": type(e).__name__})
+        logger.error(
+            f"Failed to download transcript: {e}",
+            extra={"error_type": type(e).__name__},
+        )
         raise MCPServerError(
             error_code=ErrorCode.ZOOM_API_ERROR,
             message=f"Failed to download transcript: {str(e)}",
@@ -496,7 +524,9 @@ async def download_transcript_content(
         ) from e
 
 
-def filter_recordings_with_transcripts(meetings: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def filter_recordings_with_transcripts(
+    meetings: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
     """Filter recordings to only those with VTT transcript files.
 
     Args:
@@ -512,7 +542,8 @@ def filter_recordings_with_transcripts(meetings: list[dict[str, Any]]) -> list[d
 
         # Check if any recording file is a VTT transcript
         has_vtt = any(
-            file.get("file_type") == "TRANSCRIPT" and file.get("file_extension") == "VTT"
+            file.get("file_type") == "TRANSCRIPT"
+            and file.get("file_extension") == "VTT"
             for file in recording_files
         )
 
@@ -553,7 +584,9 @@ def search_recordings_by_topic(
     return filtered
 
 
-def find_transcript_file(recording_files: list[dict[str, Any]]) -> dict[str, Any] | None:
+def find_transcript_file(
+    recording_files: list[dict[str, Any]],
+) -> dict[str, Any] | None:
     """Find VTT transcript file in recording files list.
 
     Args:
@@ -563,7 +596,10 @@ def find_transcript_file(recording_files: list[dict[str, Any]]) -> dict[str, Any
         Transcript file object or None if not found
     """
     for file in recording_files:
-        if file.get("file_type") == "TRANSCRIPT" and file.get("file_extension") == "VTT":
+        if (
+            file.get("file_type") == "TRANSCRIPT"
+            and file.get("file_extension") == "VTT"
+        ):
             return file
 
     return None

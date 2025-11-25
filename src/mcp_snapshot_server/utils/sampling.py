@@ -7,6 +7,7 @@ from the Anthropic API using MCP sampling patterns.
 import logging
 
 from anthropic import Anthropic
+from anthropic.types import TextBlock
 
 from mcp_snapshot_server.models import LLMResponse, LLMResponseMetadata, LLMTokenUsage
 from mcp_snapshot_server.utils.config import get_settings
@@ -79,7 +80,9 @@ async def sample_llm(
         content = ""
         if response.content:
             # Handle TextBlock response
-            content = response.content[0].text
+            first_block = response.content[0]
+            if isinstance(first_block, TextBlock):
+                content = first_block.text
 
         logger.info(
             "LLM sampling completed",
@@ -119,4 +122,4 @@ async def sample_llm(
 
         raise MCPServerError(
             message=error_msg, error_code=error_code, details={"error": str(e)}
-        )
+        ) from e

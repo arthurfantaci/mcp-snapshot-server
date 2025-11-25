@@ -105,7 +105,9 @@ class TestToolsPrimitive:
         assert "meeting_id" in fetch_tool.inputSchema["required"]
 
         # Check generate_snapshot_from_zoom tool
-        zoom_snapshot_tool = next(t for t in tools if t.name == "generate_snapshot_from_zoom")
+        zoom_snapshot_tool = next(
+            t for t in tools if t.name == "generate_snapshot_from_zoom"
+        )
         assert "zoom" in zoom_snapshot_tool.description.lower()
         assert "meeting_id" in zoom_snapshot_tool.inputSchema["properties"]
         assert "output_format" in zoom_snapshot_tool.inputSchema["properties"]
@@ -196,7 +198,9 @@ class TestToolsPrimitive:
         assert "Average Confidence" in result[0].text
 
     @pytest.mark.asyncio
-    async def test_generate_snapshot_error_handling(self, mcp_server, sample_vtt_content):
+    async def test_generate_snapshot_error_handling(
+        self, mcp_server, sample_vtt_content
+    ):
         """Test snapshot generation error handling with cached transcript."""
         mcp_server.orchestrator.process = AsyncMock(side_effect=Exception("Test error"))
 
@@ -245,10 +249,9 @@ class TestToolsPrimitive:
         mcp_server.orchestrator.process = AsyncMock(return_value=mock_snapshot_result)
 
         # Generate snapshot using URI
-        result = await mcp_server._generate_snapshot({
-            "transcript_uri": transcript_uri,
-            "output_format": "json"
-        })
+        result = await mcp_server._generate_snapshot(
+            {"transcript_uri": transcript_uri, "output_format": "json"}
+        )
 
         assert len(result) == 1
         assert "Customer Information" in result[0].text
@@ -269,9 +272,7 @@ class TestToolsPrimitive:
     async def test_generate_snapshot_invalid_uri(self, mcp_server):
         """Test error with invalid transcript URI."""
         with pytest.raises(MCPServerError) as exc_info:
-            await mcp_server._generate_snapshot({
-                "transcript_uri": "invalid://abc123"
-            })
+            await mcp_server._generate_snapshot({"transcript_uri": "invalid://abc123"})
 
         assert exc_info.value.error_code == ErrorCode.INVALID_INPUT
         assert "Invalid transcript URI format" in str(exc_info.value.message)
@@ -280,9 +281,9 @@ class TestToolsPrimitive:
     async def test_generate_snapshot_nonexistent_uri(self, mcp_server):
         """Test error with nonexistent transcript URI."""
         with pytest.raises(MCPServerError) as exc_info:
-            await mcp_server._generate_snapshot({
-                "transcript_uri": "transcript://nonexistent"
-            })
+            await mcp_server._generate_snapshot(
+                {"transcript_uri": "transcript://nonexistent"}
+            )
 
         assert exc_info.value.error_code == ErrorCode.RESOURCE_NOT_FOUND
         assert "Transcript not found" in str(exc_info.value.message)
@@ -473,8 +474,9 @@ class TestResourcesPrimitive:
     @pytest.mark.asyncio
     async def test_read_transcript_resource(self, mcp_server, sample_vtt_content):
         """Test reading a transcript resource returns text and metadata."""
-        from mcp_snapshot_server.tools.transcript_utils import parse_vtt_content
         import json
+
+        from mcp_snapshot_server.tools.transcript_utils import parse_vtt_content
 
         # Cache a transcript
         parsed_data = parse_vtt_content(sample_vtt_content, "test.vtt")
@@ -502,12 +504,11 @@ class TestResourcesPrimitive:
         assert response["source"] == "upload"
 
     @pytest.mark.asyncio
-    async def test_read_zoom_transcript_resource(
-        self, mcp_server, sample_vtt_content
-    ):
+    async def test_read_zoom_transcript_resource(self, mcp_server, sample_vtt_content):
         """Test that Zoom transcript resources include zoom_metadata."""
-        from mcp_snapshot_server.tools.transcript_utils import parse_vtt_content
         import json
+
+        from mcp_snapshot_server.tools.transcript_utils import parse_vtt_content
 
         # Cache a Zoom transcript
         parsed_data = parse_vtt_content(sample_vtt_content, "zoom_123.vtt")
@@ -646,7 +647,9 @@ class TestIntegration:
     """Integration tests for MCP server."""
 
     @pytest.mark.asyncio
-    async def test_full_workflow(self, mcp_server, mock_snapshot_result, sample_vtt_content, test_env_vars):
+    async def test_full_workflow(
+        self, mcp_server, mock_snapshot_result, sample_vtt_content, test_env_vars
+    ):
         """Test complete workflow from caching transcript to resource access."""
         # Mock orchestrator
         mcp_server.orchestrator.process = AsyncMock(return_value=mock_snapshot_result)
@@ -894,8 +897,8 @@ class TestListAllTranscripts:
 
         # Clear cached settings to force reload with new env vars
         import mcp_snapshot_server.utils.config as config_module
-        if "_settings" in dir(config_module):
-            delattr(config_module, "_settings")
+
+        config_module._settings = None
 
         from mcp_snapshot_server.server import SnapshotMCPServer
 
@@ -946,8 +949,8 @@ class TestListAllTranscripts:
 
         # Clear cached settings to force reload with new env vars
         import mcp_snapshot_server.utils.config as config_module
-        if "_settings" in dir(config_module):
-            delattr(config_module, "_settings")
+
+        config_module._settings = None
 
         from mcp_snapshot_server.server import SnapshotMCPServer
 
@@ -961,7 +964,9 @@ class TestListAllTranscripts:
         assert "1 cached" in text
 
     @pytest.mark.asyncio
-    async def test_list_all_transcripts_summary_counts(self, test_env_vars, monkeypatch):
+    async def test_list_all_transcripts_summary_counts(
+        self, test_env_vars, monkeypatch
+    ):
         """Test summary counts are accurate."""
         # Ensure Zoom is not configured for predictable test
         monkeypatch.setenv("ZOOM_ACCOUNT_ID", "")
@@ -971,8 +976,8 @@ class TestListAllTranscripts:
 
         # Clear cached settings to force reload with new env vars
         import mcp_snapshot_server.utils.config as config_module
-        if "_settings" in dir(config_module):
-            delattr(config_module, "_settings")
+
+        config_module._settings = None
 
         from mcp_snapshot_server.server import SnapshotMCPServer
 

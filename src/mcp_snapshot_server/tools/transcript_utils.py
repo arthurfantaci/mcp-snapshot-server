@@ -40,7 +40,7 @@ def validate_vtt_file(file_path: str) -> Path:
             message=f"Invalid file path: {file_path}",
             error_code=ErrorCode.INVALID_INPUT,
             details={"file_path": file_path, "error": str(e)},
-        )
+        ) from e
 
     # Check if file exists
     if not path.exists():
@@ -112,7 +112,9 @@ def clean_transcript_text(text: str) -> str:
     return text.strip()
 
 
-def parse_vtt_content(vtt_content: str, filename: str = "transcript.vtt") -> TranscriptData:
+def parse_vtt_content(
+    vtt_content: str, filename: str = "transcript.vtt"
+) -> TranscriptData:
     """Parse VTT transcript content string directly.
 
     Args:
@@ -140,7 +142,10 @@ def parse_vtt_content(vtt_content: str, filename: str = "transcript.vtt") -> Tra
         raise MCPServerError(
             message="Invalid VTT format: content must start with 'WEBVTT'",
             error_code=ErrorCode.INVALID_INPUT,
-            details={"vtt_filename": filename, "first_line": vtt_content.split("\n")[0]},
+            details={
+                "vtt_filename": filename,
+                "first_line": vtt_content.split("\n")[0],
+            },
         )
 
     try:
@@ -343,14 +348,14 @@ def parse_vtt_transcript(file_path: str) -> TranscriptData:
             message=f"Invalid VTT format: {str(e)}",
             error_code=ErrorCode.PARSE_ERROR,
             details={"file_path": str(path), "parse_error": str(e)},
-        )
+        ) from e
 
     except Exception as e:
         raise MCPServerError(
             message=f"Failed to parse VTT file: {str(e)}",
             error_code=ErrorCode.INTERNAL_ERROR,
             details={"file_path": str(path), "error_type": type(e).__name__},
-        )
+        ) from e
 
 
 def get_transcript_summary(transcript_data: TranscriptData) -> str:

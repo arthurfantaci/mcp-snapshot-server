@@ -57,10 +57,12 @@ def extract_entities(text: str) -> dict[str, list[str]]:
             "PERCENT": [],
         }
 
-
         for ent in doc.ents:
             # Simple deduplication
-            if ent.label_ in entities_by_type and ent.text not in entities_by_type[ent.label_]:
+            if (
+                ent.label_ in entities_by_type
+                and ent.text not in entities_by_type[ent.label_]
+            ):
                 entities_by_type[ent.label_].append(ent.text)
 
         # Clean up empty categories
@@ -215,7 +217,9 @@ def extract_key_phrases(text: str, top_n: int = 15) -> list[str]:
         return []
 
 
-def analyze_transcript_structure(transcript_data: TranscriptData) -> TranscriptStructure:
+def analyze_transcript_structure(
+    transcript_data: TranscriptData,
+) -> TranscriptStructure:
     """Analyze the structure of a transcript.
 
     Args:

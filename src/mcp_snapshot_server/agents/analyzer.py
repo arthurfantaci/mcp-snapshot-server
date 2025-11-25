@@ -5,7 +5,7 @@ extracting entities, topics, and structural information.
 """
 
 import json
-from typing import Any
+from typing import Any, cast
 
 from mcp_snapshot_server.agents.base import BaseAgent
 from mcp_snapshot_server.models.analysis import (
@@ -156,7 +156,9 @@ class AnalysisAgent(BaseAgent[AnalysisInput, AnalysisResult]):
         # Build analysis prompt
         additional_context_section = ""
         if additional_context:
-            additional_context_section = f"ADDITIONAL CONTEXT:\n{additional_context}\n\n"
+            additional_context_section = (
+                f"ADDITIONAL CONTEXT:\n{additional_context}\n\n"
+            )
 
         prompt = f"""Analyze this meeting transcript and extract structured information:
 
@@ -217,7 +219,7 @@ OUTPUT: Valid JSON only, no additional text.
 
             # Try to parse as JSON
             try:
-                analysis_data = json.loads(content)
+                analysis_data = cast("dict[str, Any]", json.loads(content))
             except json.JSONDecodeError:
                 # Fallback: extract JSON from response
                 self.logger.warning("LLM response not valid JSON, using fallback")
@@ -265,7 +267,7 @@ OUTPUT: Valid JSON only, no additional text.
         text_lower = transcript.lower()
 
         # Start with LLM assessment if available
-        availability = llm_analysis.get("data_availability", {})
+        availability: dict[str, float] = llm_analysis.get("data_availability", {})
 
         # Supplement with heuristic checks
         if not availability:

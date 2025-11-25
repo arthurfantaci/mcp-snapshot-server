@@ -1,6 +1,5 @@
 """Tests for error handling."""
 
-
 import pytest
 
 from mcp_snapshot_server.utils.errors import (

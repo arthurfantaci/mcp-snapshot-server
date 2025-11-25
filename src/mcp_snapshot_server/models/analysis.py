@@ -7,7 +7,7 @@ from typing import Any, Literal
 from pydantic import Field, field_validator
 
 from mcp_snapshot_server.models.base import SnapshotBaseModel
-from mcp_snapshot_server.models.transcript import TranscriptData
+from mcp_snapshot_server.models.transcript import TranscriptData  # noqa: TC001
 
 
 class TranscriptStructure(SnapshotBaseModel):
@@ -16,7 +16,9 @@ class TranscriptStructure(SnapshotBaseModel):
     meeting_type: str = Field("discussion", description="Type of meeting detected")
     speaker_count: int = Field(0, ge=0, description="Number of unique speakers")
     total_turns: int = Field(0, ge=0, description="Total speaking turns")
-    duration_seconds: float = Field(0.0, ge=0.0, description="Meeting duration in seconds")
+    duration_seconds: float = Field(
+        0.0, ge=0.0, description="Meeting duration in seconds"
+    )
     speaker_turns_count: dict[str, int] = Field(
         default_factory=dict, description="Turn count per speaker"
     )
@@ -46,7 +48,9 @@ class LLMInsights(SnapshotBaseModel):
         """Validate that availability scores are between 0.0 and 1.0."""
         for key, score in v.items():
             if not 0.0 <= score <= 1.0:
-                raise ValueError(f"Score for '{key}' must be between 0.0 and 1.0, got {score}")
+                raise ValueError(
+                    f"Score for '{key}' must be between 0.0 and 1.0, got {score}"
+                )
         return v
 
 
@@ -70,7 +74,8 @@ class AnalysisResult(SnapshotBaseModel):
         default_factory=list, description="Important phrases extracted"
     )
     structure: TranscriptStructure = Field(
-        default_factory=TranscriptStructure, description="Conversation structure analysis"
+        default_factory=TranscriptStructure,
+        description="Conversation structure analysis",
     )
     llm_insights: LLMInsights = Field(
         default_factory=LLMInsights, description="LLM-based analysis insights"
@@ -88,7 +93,9 @@ class AnalysisResult(SnapshotBaseModel):
         """Validate that availability scores are between 0.0 and 1.0."""
         for key, score in v.items():
             if not 0.0 <= score <= 1.0:
-                raise ValueError(f"Score for '{key}' must be between 0.0 and 1.0, got {score}")
+                raise ValueError(
+                    f"Score for '{key}' must be between 0.0 and 1.0, got {score}"
+                )
         return v
 
     @property
