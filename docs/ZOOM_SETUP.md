@@ -442,4 +442,3 @@ If you encounter issues not covered in this guide:
 1. Check the [MCP Snapshot Server GitHub Issues](https://github.com/YOUR_REPO/issues)
 2. Review Zoom API logs in Zoom Marketplace (App Management → Your App → API Logs)
 3. Contact Zoom Developer Support through the Marketplace
-
