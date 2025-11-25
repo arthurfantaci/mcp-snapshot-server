@@ -57,12 +57,14 @@ MCP Snapshot Server is a production-ready Model Context Protocol (MCP) server th
 
 ### Technical Highlights
 
-✅ **Tools** - 7 specialized tools for transcript management, Zoom integration, and snapshot generation
-✅ **Resources** - Transcripts, snapshots, sections, and field definitions exposed as MCP Resources
-✅ **Prompts** - 11 section-specific prompts + field elicitation for completeness
-✅ **Sampling** - Integrated Claude AI with retry logic and confidence scoring
-✅ **Elicitation** - Interactive collection of missing field information
-✅ **Logging** - Structured JSON logging with context and full traceability
+| Primitive | Description |
+|-----------|-------------|
+| ✅ **Tools** | 7 specialized tools for transcript management, Zoom integration, and snapshot generation |
+| ✅ **Resources** | Transcripts, snapshots, sections, and field definitions exposed as MCP Resources |
+| ✅ **Prompts** | 11 section-specific prompts + field elicitation for completeness |
+| ✅ **Sampling** | Integrated Claude AI with retry logic and confidence scoring |
+| ✅ **Elicitation** | Interactive collection of missing field information |
+| ✅ **Logging** | Structured JSON logging with context and full traceability |
 
 ## Table of Contents
 
