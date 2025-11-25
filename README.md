@@ -2,7 +2,7 @@
 
 An MCP server that transforms Zoom meeting transcripts into instant AI-powered insights or comprehensive Customer Success Snapshots—giving you fast answers or detailed documentation, seamlessly integrated with Claude Desktop.
 
-[![Tests](https://img.shields.io/badge/tests-111%20passing-brightgreen)]()
+[![Tests](https://img.shields.io/badge/tests-123%20passing-brightgreen)]()
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)]()
 [![License](https://img.shields.io/badge/license-MIT-blue)]()
 
@@ -34,7 +34,7 @@ MCP Snapshot Server is a production-ready Model Context Protocol (MCP) server th
 
 **🏗️ Enterprise-Grade Architecture**
 - All 6 MCP primitives fully implemented (Tools, Resources, Prompts, Sampling, Elicitation, Logging)
-- 111 passing tests with comprehensive error handling
+- 123 passing tests with comprehensive error handling
 - Hybrid NLP + AI approach: spaCy/NLTK for entity extraction, Claude for deep analysis
 - Structured JSON logging with full traceability for debugging and auditing
 
@@ -127,7 +127,7 @@ cp .env.example .env
 ### Run Tests
 
 ```bash
-# Run all tests (should see 107/108 passing)
+# Run all tests (should see 123 passing)
 uv run pytest tests/ -v
 
 # Run specific test suites
@@ -403,7 +403,7 @@ OrchestrationAgent
 - **Package Manager**: uv (10-100x faster than pip)
 - **Linting**: ruff (Rust-based, replaces black + isort + flake8)
 - **Type Checking**: mypy with strict mode
-- **Testing**: pytest with 111 passing tests
+- **Testing**: pytest with 123 passing tests
 - **LLM**: Anthropic Claude (Sonnet 4.5)
 - **NLP**: spaCy + NLTK for entity extraction
 - **API Integration**: Zoom OAuth 2.0 Server-to-Server
@@ -498,29 +498,36 @@ mcp-snapshot-server/
 │   │   ├── section_generator.py  # Section generation
 │   │   ├── validator.py      # Validation
 │   │   └── orchestrator.py   # Workflow orchestration
+│   ├── models/                # Pydantic data models
+│   │   ├── base.py           # Base model classes
+│   │   ├── transcript.py     # Transcript models
+│   │   ├── analysis.py       # Analysis result models
+│   │   ├── sections.py       # Section content models
+│   │   ├── validation.py     # Validation models
+│   │   ├── zoom.py           # Zoom API response models
+│   │   └── llm.py            # LLM request/response models
 │   ├── prompts/               # Templates and definitions
 │   │   ├── system_prompts.py # Agent system prompts
 │   │   ├── section_prompts.py# Section templates
 │   │   └── field_definitions.py  # Elicitable fields
-│   ├── tools/                 # VTT and NLP utilities
-│   │   ├── transcript_utils.py
-│   │   └── nlp_utils.py
+│   ├── resources/             # MCP resource handlers
+│   ├── tools/                 # VTT, NLP, and API utilities
+│   │   ├── transcript_utils.py  # VTT parsing
+│   │   ├── nlp_utils.py      # NLP entity extraction
+│   │   └── zoom_api.py       # Zoom API integration
 │   └── utils/                 # Infrastructure
 │       ├── config.py         # Pydantic settings
 │       ├── logging_config.py # Structured logging
 │       ├── errors.py         # Error handling
 │       └── sampling.py       # LLM integration
-├── tests/                     # 98 comprehensive tests
-│   ├── test_server.py        # MCP server tests (27)
+├── tests/                     # 123 comprehensive tests
+│   ├── test_server.py        # MCP server tests (35)
 │   ├── test_agents/          # Agent tests (29)
-│   ├── test_tools/           # Tool tests (17)
-│   ├── test_utils/           # Utility tests (25)
+│   ├── test_tools/           # Tool tests (23)
+│   ├── test_utils/           # Utility tests (36)
 │   └── fixtures/             # Test fixtures (VTT files)
 ├── docs/                      # Project documentation
-│   ├── MCP_Server_Project_Specification.md
-│   ├── All_Prompt_Details.txt
-│   ├── System_Prompt_Customer_Success_Snapshot.txt
-│   └── Quest_Enterprises_Kickoff_Transcript_Summary.md
+│   └── ZOOM_SETUP.md         # Zoom OAuth setup guide
 ├── .env.example              # Environment template
 ├── pyproject.toml            # Project config
 └── README.md                 # This file
@@ -724,7 +731,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 - ✅ 11-section snapshot generation
 - ✅ Multi-agent orchestration
 - ✅ Claude Desktop integration
-- ✅ 98/98 tests passing
+- ✅ 123/123 tests passing
 - ✅ Production-ready documentation
 
 ---
